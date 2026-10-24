@@ -9,11 +9,195 @@ let csrfToken = '';
 let authenticationMode = 'login';
 let gateScanner = null;
 let gateScanInProgress = false;
+let auditScanner = null;
+let auditScanInProgress = false;
 let campusChartInstance = null;
 let conditionChartInstance = null;
 
+const amharicTranslations = {
+    'Language / ቋንቋ': 'ቋንቋ',
+    'Select language': 'ቋንቋ ይምረጡ',
+    'Sign in to PAMS': 'ወደ PAMS ይግቡ',
+    'Use your assigned DMU account.': 'የተመደበልዎትን የDMU መለያ ይጠቀሙ።',
+    'Create the first administrator': 'የመጀመሪያውን አስተዳዳሪ ይፍጠሩ',
+    'Initial setup is open because no user accounts exist. This creates the System Administrator account.': 'ምንም የተጠቃሚ መለያ ስለሌለ የመጀመሪያ ማዋቀር ክፍት ነው። ይህ የስርዓት አስተዳዳሪ መለያ ይፈጥራል።',
+    'Create Administrator Account': 'የአስተዳዳሪ መለያ ይፍጠሩ',
+    'Administrator full name': 'የአስተዳዳሪው ሙሉ ስም',
+    'Username': 'የተጠቃሚ ስም',
+    'Password': 'የይለፍ ቃል',
+    'Use at least 12 characters for the first administrator password.': 'ለመጀመሪያው አስተዳዳሪ የይለፍ ቃል ቢያንስ 12 ቁምፊዎችን ይጠቀሙ።',
+    'Sign in': 'ግባ',
+    'Sign out': 'ውጣ',
+    'Fiscal Year': 'የበጀት ዓመት',
+    'Active Custodians': 'ንቁ ኃላፊዎች',
+    'Dashboard': 'ዳሽቦርድ',
+    'Asset Registry': 'የንብረት መዝገብ',
+    'Issuance & Transfers': 'ርክክብ እና ዝውውር',
+    'Maintenance & Repairs': 'ጥገና እና ማስተካከያ',
+    'Depreciation & Disposal': 'የዋጋ ቅናሽ እና ማስወገድ',
+    'Inventory Audit': 'የንብረት ቆጠራ ኦዲት',
+    'DMU Reports Generator': 'የDMU ሪፖርት ማዘጋጃ',
+    'User & Role Management': 'የተጠቃሚ እና ሚና አስተዳደር',
+    'System Audit Logs': 'የስርዓት ኦዲት መዝገቦች',
+    'DMU Executive Asset Dashboard': 'የDMU ንብረት አስተዳደር ዳሽቦርድ',
+    'Central overview for DMU property governance, departmental operations, technical services, and gate transit.': 'የDMU ንብረት አስተዳደር፣ የመምሪያ ሥራዎች፣ የቴክኒክ አገልግሎቶች እና የግቢ መግቢያ እንቅስቃሴዎች አጠቃላይ እይታ።',
+    '+ Add Asset': '+ ንብረት ጨምር',
+    'Transfer Item': 'ንብረት አዛውር',
+    'Log Repair': 'ጥገና መዝግብ',
+    'Total Valuation': 'ጠቅላላ ግምት ዋጋ',
+    'Capital Assets': 'ቋሚ ንብረቶች',
+    'Registered Assets': 'የተመዘገቡ ንብረቶች',
+    'Items Tracked': 'ክትትል የሚደረግባቸው ዕቃዎች',
+    'Active & Assigned': 'ንቁ እና የተመደቡ',
+    'In Active Use': 'በአገልግሎት ላይ',
+    'Assets Requiring Maintenance': 'ጥገና የሚያስፈልጋቸው ንብረቶች',
+    'Damaged / Under Repair': 'የተበላሹ / በጥገና ላይ',
+    'Pending Disposal': 'ለማስወገድ የሚጠብቁ',
+    'Obsolete Equipment': 'ጊዜ ያለፈባቸው መሣሪያዎች',
+    'DMU Central Management — Role Responsibilities': 'የDMU ማዕከላዊ አስተዳደር — የሚና ኃላፊነቶች',
+    'Workflow guidance only. User accounts, authentication, and role-enforced permissions are not configured in this version.': 'ይህ የሥራ ሂደት መመሪያ ብቻ ነው። በዚህ ስሪት የተጠቃሚ መለያዎች፣ ማረጋገጫ እና በሚና ላይ የተመሠረቱ ፈቃዶች አልተዋቀሩም።',
+    'System Administrator': 'የስርዓት አስተዳዳሪ',
+    'Property Admin / Stock Officer': 'የንብረት አስተዳዳሪ / የእቃ ጠባቂ',
+    'Department Head / Dean': 'የመምሪያ ኃላፊ / ዲን',
+    'Maintenance / IT Technician': 'የጥገና / የIT ቴክኒሻን',
+    'Gate Security Officer': 'የበር ጥበቃ ኃላፊ',
+    'Campus Valuation Breakdown (ETB Millions)': 'በግቢ የተከፋፈለ የንብረት ግምት ዋጋ (ሚሊዮን ብር)',
+    'Total monetary value of equipment distributed per DMU campus': 'በእያንዳንዱ የDMU ግቢ የተመደቡ መሣሪያዎች ጠቅላላ የገንዘብ ዋጋ',
+    'Asset Health & Condition': 'የንብረት ጤና እና ሁኔታ',
+    'Physical condition status ratio': 'የአካላዊ ሁኔታ ሁኔታ መጠን',
+    'Search Tag ID, Asset Name, Custodian, Serial...': 'መለያ ቁጥር፣ የንብረት ስም፣ ኃላፊ ወይም መለያ ቁጥር ፈልግ...',
+    '+ Register New Property': '+ አዲስ ንብረት መዝግብ',
+    'Filter Campus': 'በግቢ አጣራ',
+    'All Campuses': 'ሁሉም ግቢዎች',
+    'Filter Category': 'በምድብ አጣራ',
+    'All Categories': 'ሁሉም ምድቦች',
+    'Filter Condition': 'በሁኔታ አጣራ',
+    'All Conditions': 'ሁሉም ሁኔታዎች',
+    'Asset Tag & Name': 'የንብረት መለያ እና ስም',
+    'Category': 'ምድብ',
+    'Location / Campus': 'ቦታ / ግቢ',
+    'Custodian': 'ኃላፊ',
+    'Cost (ETB)': 'ዋጋ (ብር)',
+    'Condition': 'ሁኔታ',
+    'Actions': 'ድርጊቶች',
+    'Inter-Department & Campus Transfers': 'በመምሪያ እና በግቢ መካከል ዝውውር',
+    'Track movement of university equipment between faculties and generate official Gate Passes.': 'በፋኩልቲዎች መካከል የዩኒቨርሲቲ መሣሪያዎችን እንቅስቃሴ ይከታተሉ እና ይፋዊ የመውጫ ፈቃዶችን ያዘጋጁ።',
+    'Expected Registered Items': 'የሚጠበቁ የተመዘገቡ ዕቃዎች',
+    'Verified Present': 'መኖራቸው የተረጋገጠ',
+    'Discrepancy / Unaccounted': 'ልዩነት / ያልተገኙ',
+    'Audit Checklist & Location Log': 'የኦዲት ማረጋገጫ ዝርዝር እና የቦታ መዝገብ',
+    'DMU Property Administration Reports': 'የDMU ንብረት አስተዳደር ሪፖርቶች',
+    'Annual Property Inventory Summary': 'ዓመታዊ የንብረት ቆጠራ ማጠቃለያ',
+    'Print Full Master Ledger': 'ሙሉ ዋና መዝገብ አትም',
+    'Departmental Custodian Clearance': 'የመምሪያ ንብረት ኃላፊ ማጣሪያ',
+    'Print Clearance Form': 'የማጣሪያ ቅጽ አትም',
+    'Name': 'ስም',
+    'Role': 'ሚና',
+    'Department': 'መምሪያ',
+    'Status': 'ሁኔታ',
+    'Action': 'ድርጊት',
+    'Time': 'ሰዓት',
+    'User': 'ተጠቃሚ',
+    'Details': 'ዝርዝሮች',
+    'Main Campus': 'ዋና ግቢ',
+    'Health Sciences': 'የጤና ሳይንስ',
+    'Technology Institute': 'የቴክኖሎጂ ተቋም',
+    'Agriculture Campus': 'የግብርና ግቢ',
+    'Electronics': 'ኤሌክትሮኒክስ',
+    'Lab Equipment': 'የላቦራቶሪ መሣሪያ',
+    'Vehicles': 'ተሽከርካሪዎች',
+    'Furniture': 'የቤት ዕቃዎች',
+    'New': 'አዲስ',
+    'Good': 'ጥሩ',
+    'Fair': 'መካከለኛ',
+    'Damaged': 'የተበላሸ',
+    'Obsolete': 'ጊዜ ያለፈበት',
+    'Cancel': 'ሰርዝ',
+    'Close': 'ዝጋ',
+    'Save': 'አስቀምጥ',
+    'Submit': 'አስገባ',
+    'Search': 'ፈልግ',
+    'Verified': 'ተረጋግጧል',
+    'Not verified': 'አልተረጋገጠም',
+    'Start QR Count': 'የQR ቆጠራ ጀምር',
+    'Stop Camera': 'ካሜራውን አቁም',
+    'Create Account': 'መለያ ፍጠር',
+    'Full name': 'ሙሉ ስም',
+    'Property Admin': 'የንብረት አስተዳዳሪ',
+    'Temporary password (12+ chars)': 'ጊዜያዊ የይለፍ ቃል (12+ ቁምፊዎች)',
+    'Department (for Dept Head)': 'መምሪያ (ለመምሪያ ኃላፊ)',
+    'No property items found.': 'ምንም የንብረት ዕቃ አልተገኘም።',
+    'Choose Asset': 'ንብረት ይምረጡ',
+    'Low Priority': 'ዝቅተኛ ቅድሚያ',
+    'Medium Priority': 'መካከለኛ ቅድሚያ',
+    'Urgent Priority': 'አስቸኳይ ቅድሚያ',
+    'Switch to dark mode': 'ወደ ጨለማ ሁነታ ቀይር',
+    'Switch to light mode': 'ወደ ብርሃን ሁነታ ቀይር'
+};
+
+const englishTranslations = Object.fromEntries(
+    Object.entries(amharicTranslations).map(([english, amharic]) => [amharic, english])
+);
+
+let selectedLanguage = 'en';
+
+function translateText(value) {
+    if (selectedLanguage === 'am') return amharicTranslations[value] || value;
+    return englishTranslations[value] || value;
+}
+
+function translateElement(element) {
+    if (element.nodeType === Node.TEXT_NODE) {
+        const trimmedText = element.nodeValue.trim();
+        const translatedText = translateText(trimmedText);
+        if (trimmedText && translatedText !== trimmedText) {
+            const start = element.nodeValue.indexOf(trimmedText);
+            element.nodeValue = `${element.nodeValue.slice(0, start)}${translatedText}${element.nodeValue.slice(start + trimmedText.length)}`;
+        }
+        return;
+    }
+
+    if (element.nodeType !== Node.ELEMENT_NODE) return;
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    textNodes.forEach(translateElement);
+
+    const elements = [element, ...element.querySelectorAll('*')];
+    elements.forEach(child => ['aria-label', 'placeholder', 'title'].forEach(attribute => {
+        const value = child.getAttribute(attribute);
+        if (value) child.setAttribute(attribute, translateText(value));
+    }));
+}
+
+function setLanguage(language) {
+    selectedLanguage = language === 'am' ? 'am' : 'en';
+    document.documentElement.lang = selectedLanguage;
+    localStorage.setItem('pams-language', selectedLanguage);
+    document.querySelectorAll('.language-selector').forEach(selector => {
+        selector.value = selectedLanguage;
+    });
+    translateElement(document.body);
+}
+
+function initializeLanguage() {
+    const savedLanguage = localStorage.getItem('pams-language');
+    selectedLanguage = savedLanguage === 'am' ? 'am' : 'en';
+    document.querySelectorAll('.language-selector').forEach(selector => {
+        selector.value = selectedLanguage;
+        selector.addEventListener('change', () => setLanguage(selector.value));
+    });
+    setLanguage(selectedLanguage);
+
+    const observer = new MutationObserver(records => {
+        records.forEach(record => record.addedNodes.forEach(translateElement));
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
 // Initial Setup
 document.addEventListener('DOMContentLoaded', () => {
+    initializeLanguage();
     updateBrightnessIcon();
     initializeAuthentication();
 });
@@ -638,6 +822,14 @@ async function startGateScanner() {
         showGateScanResult('error', 'Camera scanner library could not be loaded. Enter the voucher number manually.');
         return;
     }
+    if (!window.isSecureContext) {
+        showGateScanResult('error', 'Camera access requires a secure page. Open PAMS through http://localhost or HTTPS, or enter the voucher number manually.');
+        return;
+    }
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        showGateScanResult('error', 'This browser does not support camera access. Use a current browser or enter the voucher number manually.');
+        return;
+    }
 
     startButton.disabled = true;
     reader.classList.remove('hidden');
@@ -660,7 +852,15 @@ async function startGateScanner() {
     } catch (err) {
         reader.classList.add('hidden');
         console.error('Could not start gate security camera:', err);
-        showGateScanResult('error', 'Could not access the camera. Allow camera permission or enter the voucher number manually.');
+        const cameraError = err?.name;
+        const message = cameraError === 'NotAllowedError' || cameraError === 'PermissionDeniedError'
+            ? 'Camera permission is blocked. Allow camera access for this site in your browser settings, then try again. You can also enter the voucher number manually.'
+            : cameraError === 'NotFoundError' || cameraError === 'DevicesNotFoundError'
+                ? 'No camera was found on this device. Connect a camera or enter the voucher number manually.'
+                : cameraError === 'NotReadableError' || cameraError === 'TrackStartError'
+                    ? 'The camera is already in use by another app or could not be started. Close other apps using it and try again, or enter the voucher number manually.'
+                    : 'Could not start the camera. Check the browser camera permission and make sure no other app is using it, or enter the voucher number manually.';
+        showGateScanResult('error', message);
     } finally {
         startButton.disabled = false;
     }
@@ -697,13 +897,27 @@ async function lookupGatePassValue(value) {
         const result = await requestJson(`api/gate-clearance.php?gatePass=${encodeURIComponent(gatePass)}`);
         const transfer = result.data;
         const authorized = transfer.status === 'Approved';
-        const checkedOut = transfer.events.some(event => event.event_type === 'Check-out');
-        const checkedIn = transfer.events.some(event => event.event_type === 'Check-in');
+        const checkedOut = Array.isArray(transfer.events) && transfer.events.some(event => event.event_type === 'Check-out');
+        const checkedIn = Array.isArray(transfer.events) && transfer.events.some(event => event.event_type === 'Check-in');
         const nextEvent = !checkedOut ? 'Check-out' : !checkedIn ? 'Check-in' : '';
         const heading = authorized ? 'RELEASE AUTHORIZED' : `NOT AUTHORIZED — ${transfer.status.toUpperCase()}`;
         const classes = authorized
             ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
             : 'border-rose-300 bg-rose-50 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200';
+        const issueForm = `
+            <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <p class="font-semibold text-xs uppercase tracking-wide">Report suspicious or invalid pass</p>
+                <form onsubmit="reportSuspiciousGatePass(event, '${escapeHtml(gatePass)}')" class="mt-2 grid grid-cols-1 gap-2">
+                    <select name="reason" class="p-2 rounded border border-amber-300 bg-white text-slate-900 text-xs">
+                        <option value="Suspicious or duplicate gate pass">Suspicious or duplicate gate pass</option>
+                        <option value="Invalid or expired gate pass">Invalid or expired gate pass</option>
+                        <option value="Transfer mismatch or unexpected asset">Transfer mismatch or unexpected asset</option>
+                    </select>
+                    <textarea name="details" rows="2" maxlength="500" placeholder="Add notes about the issue found at the gate" class="p-2 rounded border border-amber-300 bg-white text-slate-900 text-xs"></textarea>
+                    <button type="submit" class="bg-amber-600 text-white px-3 py-2 rounded font-semibold text-xs">Report issue</button>
+                </form>
+            </div>
+        `;
         showGateScanResult(authorized ? 'success' : 'denied', `
             <div class="rounded-lg border p-4 ${classes}">
                 <p class="font-bold">${escapeHtml(heading)}</p>
@@ -713,7 +927,7 @@ async function lookupGatePassValue(value) {
                 <p><strong>To:</strong> ${escapeHtml(transfer.to_campus)} — ${escapeHtml(transfer.to_dept)}</p>
                 <p><strong>Requested by:</strong> ${escapeHtml(transfer.requested_by)}</p>
                 <p><strong>Transfer status:</strong> ${escapeHtml(transfer.status)}</p>
-                ${transfer.events.length ? `<div class="mt-3 border-t border-current/20 pt-2"><strong>Transit record</strong>${transfer.events.map(event => `<p>${escapeHtml(event.event_type)}: ${escapeHtml(event.driver_name)} / ${escapeHtml(event.gate_officer)} at ${escapeHtml(event.event_at)}</p>`).join('')}</div>` : ''}
+                ${Array.isArray(transfer.events) && transfer.events.length ? `<div class="mt-3 border-t border-current/20 pt-2"><strong>Transit record</strong>${transfer.events.map(event => `<p>${escapeHtml(event.event_type)}: ${escapeHtml(event.driver_name)} / ${escapeHtml(event.gate_officer)} at ${escapeHtml(event.event_at)}</p>`).join('')}</div>` : ''}
                 ${authorized && nextEvent ? `
                     <form onsubmit="recordGateTransit(event, '${escapeHtml(transfer.id)}', '${nextEvent}')" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input name="driverName" required maxlength="255" placeholder="Driver full name" class="p-2 rounded border text-slate-900">
@@ -721,11 +935,53 @@ async function lookupGatePassValue(value) {
                         <button type="submit" class="sm:col-span-2 bg-indigo-900 text-white px-3 py-2 rounded font-semibold">Record ${nextEvent}</button>
                     </form>` : ''}
                 ${authorized && !nextEvent ? '<p class="mt-3 font-semibold">Transit check-out and check-in are complete.</p>' : ''}
+                ${!authorized ? issueForm : ''}
             </div>
         `, true);
     } catch (err) {
         console.error('Gate pass verification failed:', err);
-        showGateScanResult('error', `Gate pass verification failed: ${escapeHtml(err.message)}`);
+        const warningBox = `
+            <div class="rounded-lg border border-rose-300 bg-rose-50 p-4 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+                <p class="font-bold">INVALID OR UNKNOWN GATE PASS</p>
+                <p class="mt-2">${escapeHtml(err.message)}</p>
+                <form onsubmit="reportSuspiciousGatePass(event, '${escapeHtml(gatePass)}')" class="mt-3 grid grid-cols-1 gap-2">
+                    <select name="reason" class="p-2 rounded border border-rose-300 bg-white text-slate-900 text-xs">
+                        <option value="Unknown or invalid gate pass">Unknown or invalid gate pass</option>
+                        <option value="Repeat scan of a cancelled pass">Repeat scan of a cancelled pass</option>
+                        <option value="Potential counterfeit gate pass">Potential counterfeit gate pass</option>
+                    </select>
+                    <textarea name="details" rows="2" maxlength="500" placeholder="Describe the issue" class="p-2 rounded border border-rose-300 bg-white text-slate-900 text-xs"></textarea>
+                    <button type="submit" class="bg-rose-700 text-white px-3 py-2 rounded font-semibold text-xs">Report issue</button>
+                </form>
+            </div>
+        `;
+        showGateScanResult('error', warningBox, true);
+    }
+}
+
+async function reportSuspiciousGatePass(event, gatePass) {
+    event.preventDefault();
+    const form = event.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    try {
+        const result = await requestJson('api/gate-clearance.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'report',
+                gatePass,
+                reason: form.elements.reason.value,
+                details: form.elements.details.value
+            })
+        });
+        showToast(result.message);
+        showGateScanResult('denied', `<div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p class="font-bold">REPORT SUBMITTED</p><p class="mt-2">${escapeHtml(result.message)}</p></div>`, true);
+    } catch (err) {
+        console.error('Could not report suspicious gate pass:', err);
+        showGateScanResult('error', `Could not submit gate-pass alert: ${escapeHtml(err.message)}`);
+    } finally {
+        submitButton.disabled = false;
     }
 }
 
@@ -875,7 +1131,9 @@ function renderDisposalTable() {
 function renderAuditSection() {
     const checklist = document.getElementById('auditChecklist');
     const summary = document.getElementById('audit-session-summary');
+    const startScanButton = document.getElementById('startAuditScannerButton');
     checklist.innerHTML = '';
+    startScanButton.disabled = !physicalCountSession;
 
     if (!physicalCountSession) {
         document.getElementById('audit-expected').textContent = '0 Units';
@@ -910,6 +1168,126 @@ function renderAuditSection() {
     updateAuditCounts();
 }
 
+async function startAuditScanner() {
+    const reader = document.getElementById('auditScannerReader');
+    const startButton = document.getElementById('startAuditScannerButton');
+    const stopButton = document.getElementById('stopAuditScannerButton');
+    if (!physicalCountSession) {
+        showAuditScanMessage('Start a physical count session before scanning asset tags.', 'error');
+        return;
+    }
+    if (typeof Html5Qrcode === 'undefined') {
+        showAuditScanMessage('The QR scanner library could not be loaded. Verify assets manually.', 'error');
+        return;
+    }
+    if (!window.isSecureContext) {
+        showAuditScanMessage('Camera access requires a secure page. Open PAMS through http://localhost or HTTPS, or verify assets manually.', 'error');
+        return;
+    }
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        showAuditScanMessage('This browser does not support camera access. Verify assets manually.', 'error');
+        return;
+    }
+
+    startButton.disabled = true;
+    reader.classList.remove('hidden');
+    try {
+        auditScanner = auditScanner || new Html5Qrcode('auditScannerReader');
+        const scanOptions = { fps: 10, qrbox: { width: 240, height: 180 } };
+        try {
+            await auditScanner.start(
+                { facingMode: 'environment' },
+                scanOptions,
+                handleAuditQrScan,
+                () => {}
+            );
+        } catch (facingModeError) {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras.length) throw facingModeError;
+            const camera = cameras.find(({ label }) => /back|rear|environment/i.test(label)) || cameras[0];
+            await auditScanner.start(camera.id, scanOptions, handleAuditQrScan, () => {});
+        }
+        stopButton.classList.remove('hidden');
+        showAuditScanMessage('Camera ready. Scan an asset QR tag to count it as present.', 'success');
+    } catch (err) {
+        reader.classList.add('hidden');
+        console.error('Could not start inventory audit camera:', err);
+        const cameraError = err?.name;
+        const errorText = String(err?.message || err || '');
+        const message = cameraError === 'NotAllowedError' || cameraError === 'PermissionDeniedError' || /permission|denied/i.test(errorText)
+            ? 'Camera permission is blocked. Allow camera access for this site, then try again, or verify assets manually.'
+            : cameraError === 'NotFoundError' || cameraError === 'DevicesNotFoundError' || /no camera|camera.*not found/i.test(errorText)
+                ? 'No camera was found on this device. Connect a camera or verify assets manually.'
+                : cameraError === 'NotReadableError' || cameraError === 'TrackStartError'
+                    ? 'The camera is already in use by another app. Close it and try again, or verify assets manually.'
+                    : 'Could not start the camera. Check browser permissions and camera availability, or verify assets manually.';
+        showAuditScanMessage(message, 'error');
+    } finally {
+        startButton.disabled = Boolean(auditScanner && auditScanner.isScanning);
+    }
+}
+
+async function handleAuditQrScan(decodedText) {
+    if (auditScanInProgress) return;
+    auditScanInProgress = true;
+    try {
+        const scannedAssetId = decodedText.trim().toUpperCase();
+        const item = physicalCountSession?.items.find(
+            entry => entry.asset_id.toUpperCase() === scannedAssetId
+        );
+        if (!item) {
+            showAuditScanMessage(`No asset with ID "${scannedAssetId}" is in this count session.`, 'error');
+            return;
+        }
+        if (item.is_verified === true) {
+            showAuditScanMessage(`${item.asset_id} was already counted as present.`, 'success');
+            return;
+        }
+
+        const checkbox = [...document.querySelectorAll('.audit-check')]
+            .find(entry => entry.dataset.assetId === item.asset_id);
+        if (!checkbox) {
+            throw new Error('The matching asset is not available in the audit checklist.');
+        }
+        checkbox.checked = true;
+        const saved = await updateAuditItem(item.asset_id, checkbox);
+        if (saved) {
+            showAuditScanMessage(`${item.asset_id} counted as present. Scan the next asset tag.`, 'success');
+        }
+    } catch (err) {
+        console.error('Could not record scanned inventory asset:', err);
+        showAuditScanMessage(`Could not count scanned asset: ${err.message}`, 'error');
+    } finally {
+        auditScanInProgress = false;
+    }
+}
+
+async function stopAuditScanner() {
+    const reader = document.getElementById('auditScannerReader');
+    const stopButton = document.getElementById('stopAuditScannerButton');
+    const startButton = document.getElementById('startAuditScannerButton');
+    if (auditScanner && auditScanner.isScanning) {
+        try {
+            await auditScanner.stop();
+        } catch (err) {
+            console.error('Could not stop inventory audit camera:', err);
+            showAuditScanMessage('The camera scanner could not be stopped cleanly. Close this page to release camera access.', 'error');
+        }
+    }
+    if (!auditScanner || !auditScanner.isScanning) {
+        reader.classList.add('hidden');
+        stopButton.classList.add('hidden');
+        startButton.disabled = false;
+    }
+}
+
+function showAuditScanMessage(message, type) {
+    const result = document.getElementById('auditScanMessage');
+    result.textContent = message;
+    result.classList.remove('hidden', 'text-rose-700', 'text-emerald-700');
+    result.classList.add(type === 'error' ? 'text-rose-700' : 'text-emerald-700');
+}
+
 function updateAuditCounts() {
     const checks = [...document.querySelectorAll('.audit-check')];
     const verified = checks.filter(check => check.checked).length;
@@ -941,10 +1319,12 @@ async function updateAuditItem(assetId, checkbox) {
         const item = physicalCountSession.items.find(entry => entry.asset_id === assetId);
         if (item) item.is_verified = checked;
         updateAuditCounts();
+        return true;
     } catch (err) {
         checkbox.checked = !checked;
         console.error('Failed to update physical count item:', err);
         showToast(`Could not save count result: ${err.message}`);
+        return false;
     } finally {
         checkbox.disabled = false;
     }
@@ -1003,7 +1383,7 @@ function viewTagModal(id) {
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = '';
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: item.id, width: 48, height: 48 });
+        new QRCode(qrContainer, { text: item.id, width: 128, height: 128 });
     } else {
         qrContainer.textContent = item.id;
     }

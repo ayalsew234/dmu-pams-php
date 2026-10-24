@@ -52,7 +52,7 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-6 text-sm">
+            <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-sm">
                 <div class="hidden lg:flex items-center gap-4 bg-indigo-900/50 border border-indigo-800 px-4 py-2 rounded-lg text-xs">
                     <div>
                         <span class="text-indigo-300 block">Fiscal Year</span>
@@ -69,6 +69,14 @@
                     <svg id="brightnessMoonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                     <svg id="brightnessSunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </button>
+
+                <label class="flex items-center gap-2 text-xs text-indigo-100">
+                    <span>Language / ቋንቋ</span>
+                    <select class="language-selector rounded-md border border-indigo-700 bg-indigo-900 px-2 py-1 text-white" aria-label="Select language">
+                        <option value="en">English</option>
+                        <option value="am">አማርኛ</option>
+                    </select>
+                </label>
 
                 <div class="flex items-center gap-2 border-l border-indigo-800 pl-4">
                     <div id="userBadge" class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs border border-amber-500/40">
@@ -117,8 +125,15 @@
         </div>
     </nav>
 
-    <section id="authPanel" class="flex-1 flex items-center justify-center p-4">
+    <section id="authPanel" class="flex-1 flex items-center justify-center p-4" style="background: url('assets/dmu.jpg') center / cover no-repeat;">
         <div class="w-full max-w-md rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-6 shadow-xl space-y-5">
+            <div class="flex items-center justify-end gap-2 text-sm">
+                <label for="authLanguageSelector" class="font-medium">Language / ቋንቋ</label>
+                <select id="authLanguageSelector" class="language-selector rounded-md border border-slate-300 bg-white px-2 py-1 dark:bg-slate-900 dark:border-slate-700" aria-label="Select language">
+                    <option value="en">English</option>
+                    <option value="am">አማርኛ</option>
+                </select>
+            </div>
             <div class="text-center">
                 <div class="mx-auto w-12 h-12 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center">DMU</div>
                 <h2 id="authHeading" class="text-xl font-bold mt-3">Sign in to PAMS</h2>
@@ -382,6 +397,18 @@
                     <p id="audit-session-summary" class="text-xs text-slate-500 mt-1">No physical count session is active.</p>
                 </div>
                 <button id="startAuditSessionButton" onclick="startAuditSession()" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Start New Physical Count Session</button>
+            </div>
+            <div class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                <div>
+                    <h3 class="font-bold text-base">Automatic Asset Count</h3>
+                    <p class="text-sm text-slate-500">Scan an asset tag QR code to automatically mark that asset present. You can also verify items manually below.</p>
+                </div>
+                <div id="auditScannerReader" class="hidden w-full max-w-md overflow-hidden rounded-lg"></div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="startAuditScannerButton" type="button" onclick="startAuditScanner()" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Start QR Count</button>
+                    <button id="stopAuditScannerButton" type="button" onclick="stopAuditScanner()" class="hidden border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm">Stop Camera</button>
+                </div>
+                <p id="auditScanMessage" class="hidden text-sm" role="status" aria-live="polite"></p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
@@ -733,7 +760,7 @@
     </footer>
 
     <!-- Frontend Core Application Script -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="assets/js/app.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
+    <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 </body>
 </html>

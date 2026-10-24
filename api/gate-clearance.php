@@ -34,6 +34,29 @@ api_require_method('POST');
 
 try {
     $input = api_request_data();
+    if (($input['action'] ?? '') === 'report') {
+        $user = api_require_roles(['system_admin', 'property_admin', 'gate_security']);
+        $gatePass = api_required_string($input, 'gatePass', 'Gate pass');
+        $reason = api_optional_string($input, 'reason', 'Suspicious or invalid gate pass');
+        $details = api_optional_string($input, 'details');
+        $transferStmt = $pdo->prepare('SELECT id, asset_id, status FROM transfers WHERE gate_pass = ? LIMIT 1');
+        $transferStmt->execute([$gatePass]);
+        $transfer = $transferStmt->fetch();
+        $detailText = trim($details !== '' ? "$details" : 'No additional details provided.');
+        if ($transfer) {
+            api_audit(
+                'gate_pass_reported',
+                "Suspicious gate pass $gatePass reported by {$user['full_name']} for transfer {$transfer['id']} ({$transfer['status']}): $reason. Details: $detailText"
+            );
+        } else {
+            api_audit(
+                'invalid_gate_pass_reported',
+                "Invalid gate pass $gatePass reported by {$user['full_name']}: $reason. Details: $detailText"
+            );
+        }
+        api_response(['success' => true, 'message' => 'Suspicious or invalid gate pass reported for review.']);
+    }
+
     $transferId = api_required_string($input, 'transferId', 'Transfer');
     $eventType = api_required_string($input, 'eventType', 'Transit event');
     if (!in_array($eventType, ['Check-out', 'Check-in'], true)) {

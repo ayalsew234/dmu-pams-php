@@ -16,3 +16,5 @@ try {
 } catch (Throwable $e) {
     api_handle_error($e);
 }
+
+

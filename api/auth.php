@@ -210,7 +210,8 @@ try {
                     $role === 'department_head' ? $department : null,
                     $userId,
                 ]);
-            }
+            }  
+
             api_audit('user_account_updated', "Updated account ID $userId.");
             api_response(['success' => true, 'message' => 'User account updated.']);
         }

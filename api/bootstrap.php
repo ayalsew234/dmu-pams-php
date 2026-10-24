@@ -164,3 +164,4 @@ function api_handle_error(Throwable $error): void
     error_log('PAMS API error: ' . $error->getMessage());
     api_response(['success' => false, 'error' => 'The request could not be completed. Check the submitted data and database configuration.'], 500);
 }
+
