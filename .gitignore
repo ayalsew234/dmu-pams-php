@@ -1,0 +1,31 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and generated artifacts
+/vendor/
+/node_modules/
+/coverage/
+/dist/
+/build/
+/.phpunit.cache/
+/.phpunit.result.cache
+
+# Logs, temporary files, and database exports
+*.log
+*.tmp
+*.sql.gz
+*.dump
+*.bak
+*.backup
+
+# Editor and operating-system files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo

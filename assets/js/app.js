@@ -55,7 +55,19 @@ const amharicTranslations = {
     'Pending Disposal': 'ለማስወገድ የሚጠብቁ',
     'Obsolete Equipment': 'ጊዜ ያለፈባቸው መሣሪያዎች',
     'DMU Central Management — Role Responsibilities': 'የDMU ማዕከላዊ አስተዳደር — የሚና ኃላፊነቶች',
-    'Workflow guidance only. User accounts, authentication, and role-enforced permissions are not configured in this version.': 'ይህ የሥራ ሂደት መመሪያ ብቻ ነው። በዚህ ስሪት የተጠቃሚ መለያዎች፣ ማረጋገጫ እና በሚና ላይ የተመሠረቱ ፈቃዶች አልተዋቀሩም።',
+    'Signed-in staff see only the modules assigned to their role. API routes enforce the same permissions.': 'የገቡ ሠራተኞች የሚናቸውን ሞጁሎች ብቻ ያያሉ። የAPI መንገዶች ተመሳሳይ ፈቃዶችን ያስከብራሉ።',
+    'Central control for university property': 'ለዩኒቨርሲቲ ንብረት ማዕከላዊ ቁጥጥር',
+    'PAMS helps Property Administration, department heads, technicians, and gate security track equipment from registration through transfer, repair, audit, and disposal.': 'PAMS የንብረት አስተዳደር፣ የመምሪያ ኃላፊዎች፣ ቴክኒሻኖች እና የበር ጥበቃ ከመመዝገብ እስከ ዝውውር፣ ጥገና፣ ኦዲት እና ማስወገድ ዕቃዎችን እንዲከታተሉ ይረዳል።',
+    'Tag, locate, and value campus equipment in ETB.': 'የግቢ መሣሪያዎችን በብር ምዝገባ፣ አካባቢ እና ግምት ያድርጉ።',
+    'Approve movement and print official gate-pass vouchers.': 'እንቅስቃሴን ያጽድቁ እና ይፋዊ የመውጫ ፈቃድ ያትሙ።',
+    'Work orders, diagnosis, costs, and spare-part notes.': 'የሥራ ትዕዛዞች፣ ምርመራ፣ ወጪዎች እና የመለዋወጫ ማስታወሻዎች።',
+    'QR verification with check-out and check-in clearance.': 'በQR ማረጋገጫ ከመውጣት እና ከመግባት ፈቃድ ጋር።',
+    'Campuses': 'ግቢዎች',
+    'Accounts, security, and audit logs.': 'መለያዎች፣ ደህንነት እና የኦዲት መዝገቦች።',
+    'Global register, transfers, counts, and disposal.': 'አጠቃላይ መዝገብ፣ ዝውውር፣ ቆጠራ እና ማስወገድ።',
+    'Department inventory, requests, and maintenance tickets.': 'የመምሪያ ንብረት፣ ጥያቄዎች እና የጥገና ትኬቶች።',
+    'Work-order progress, diagnosis, and repair costs.': 'የሥራ ትዕዛዝ ሂደት፣ ምርመራ እና የጥገና ወጪ።',
+    'Gate-pass scanning and transit clearance.': 'የመውጫ ፈቃድ መቃኘት እና የመንገድ ፈቃድ።',
     'System Administrator': 'የስርዓት አስተዳዳሪ',
     'Property Admin / Stock Officer': 'የንብረት አስተዳዳሪ / የእቃ ጠባቂ',
     'Department Head / Dean': 'የመምሪያ ኃላፊ / ዲን',
@@ -132,7 +144,9 @@ const amharicTranslations = {
     'Medium Priority': 'መካከለኛ ቅድሚያ',
     'Urgent Priority': 'አስቸኳይ ቅድሚያ',
     'Switch to dark mode': 'ወደ ጨለማ ሁነታ ቀይር',
-    'Switch to light mode': 'ወደ ብርሃን ሁነታ ቀይር'
+    'Switch to light mode': 'ወደ ብርሃን ሁነታ ቀይር',
+    'Welcome to Debre Markos University Property Asset & Management System — register assets, approve transfers, scan gate passes, and complete annual inventory audits.': 'እንኳን ወደ የደብረ ማርቆስ ዩኒቨርሲቲ የንብረት አስተዳደር ስርዓት በደህና መጡ — ንብረት ይመዝግቡ፣ ዝውውር ያጽድቁ፣ የመውጫ ፈቃድ ይቃኙ እና ዓመታዊ ቆጠራ ያጠናቁ።',
+    'Property Asset & Management System': 'የንብረት አስተዳደር ስርዓት'
 };
 
 const englishTranslations = Object.fromEntries(

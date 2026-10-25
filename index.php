@@ -24,7 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors">
+<body class="site-background min-h-screen flex flex-col bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors">
 
     <!-- Toast Notification Container -->
     <div id="toast" class="hidden fixed top-5 right-5 z-50 bg-amber-500 text-slate-950 font-semibold px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-bounce">
@@ -125,9 +125,9 @@
         </div>
     </nav>
 
-    <section id="authPanel" class="relative flex-1 flex items-center justify-center p-4" style="background: url('assets/dmu3.jpg') center / cover no-repeat;">
-     
-        <div class="w-full max-w-md rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-6 shadow-xl space-y-5">
+    <section id="authPanel" class="auth-hero relative flex-1 flex items-center justify-center p-4">
+        <div class="auth-hero-overlay" aria-hidden="true"></div>
+        <div class="relative z-10 w-full max-w-md rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-6 shadow-xl space-y-5">
             <div class="flex items-center justify-end gap-2 text-sm">
                 <label for="authLanguageSelector" class="font-medium">Language / ቋንቋ</label>
                 <select id="authLanguageSelector" class="language-selector rounded-md border border-slate-300 bg-white px-2 py-1 dark:bg-slate-900 dark:border-slate-700" aria-label="Select language">
@@ -167,7 +167,7 @@
         <section id="tab-dashboard" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold tracking-tight">DMU Executive Asset Dashboard</h2>
+                    <h2 class="text-2xl font-bold tracking-tight"  style="font-weight: bold;">DMU Executive Asset Dashboard</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Central overview for DMU property governance, departmental operations, technical services, and gate transit.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">

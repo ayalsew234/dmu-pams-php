@@ -34,6 +34,10 @@ The matrix's "Department Head / Dean: Approve Asset Transfers (Local Dept)" is i
 
 The application uses PHP sessions with HttpOnly/SameSite cookies and CSRF tokens for API mutations. Use HTTPS when accessed over a network; local setup alone is restricted to localhost. Protect database backups and configure the web server and database credentials before production use.
 
+## Repository maintenance
+
+The root `.gitignore` excludes local environment files, dependency and build directories, logs, temporary files, compressed database exports, and editor/operating-system artifacts. Keep real database credentials and database backups out of version control. The tracked SQL schema and upgrade scripts are intentionally not ignored.
+
 ## API
 
 - `GET api/auth.php?action=status`, `POST api/auth.php?action=setup` (first local admin only), `POST api/auth.php?action=login`, and `POST api/auth.php?action=logout`
