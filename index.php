@@ -125,7 +125,8 @@
         </div>
     </nav>
 
-    <section id="authPanel" class="flex-1 flex items-center justify-center p-4" style="background: url('assets/dmu.jpg') center / cover no-repeat;">
+    <section id="authPanel" class="relative flex-1 flex items-center justify-center p-4" style="background: url('assets/dmu3.jpg') center / cover no-repeat;">
+     
         <div class="w-full max-w-md rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-6 shadow-xl space-y-5">
             <div class="flex items-center justify-end gap-2 text-sm">
                 <label for="authLanguageSelector" class="font-medium">Language / ቋንቋ</label>

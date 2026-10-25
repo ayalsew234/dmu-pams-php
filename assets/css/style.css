@@ -1,3 +1,26 @@
+/* Welcome marquee styling */
+.marq {
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+@keyframes auth-welcome-horizontal {
+    from {
+        transform: translateX(100vw);
+
+    }
+
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-welcome-marquee {
+        animation: none;
+    }
+}
+
 /* Print only the requested report or voucher. */
 @media print {
     body * {
