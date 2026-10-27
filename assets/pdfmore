@@ -1,0 +1,269 @@
+
+DMU Property Asset Management System (PAMS-ETH)
+Complete User Roles, Responsibilities, Permissions & Functional Modules — Tree Structure
+Based on your uploaded Debre Markos University Property Asset Management System (PAMS-ETH) source code, the project is designed to manage university property throughout its lifecycle, from procurement and registration to assignment, maintenance, physical auditing, depreciation, and disposal.
+
+Below is a detailed hierarchical tree showing the project's actual named roles and their responsibilities. I will also distinguish between functions shown in the uploaded interface and recommended permission rules for a production system.
+1. Main project hierarchy
+DEBRE MARKOS UNIVERSITY
+
+PAMS-ETH — Central Property Management
+
+System Administrator
+
+Accounts, roles, security and audit logs
+
+Operational and oversight roles
+
+Procurement Officer
+
+Suppliers, PO, GRN, invoices
+
+
+Storekeeper
+
+Stock, SIV, QR tags
+
+
+Property Admin
+
+Assets, transfers, disposal
+
+
+Department Head / Dean
+
+Department equipment
+
+
+Asset Custodian
+
+Assigned property
+
+
+Maintenance Technician
+
+Repairs and work orders
+
+
+Gate Security Officer
+
+Pass verification, transit
+
+
+Internal Auditor
+
+Counts, reconciliation
+
+
+Finance Officer
+
+Valuation, compliance
+
+
+Disposal Committee
+
+Disposal case decisions
+
+
+
+
+These are functional roles, not necessarily a reporting hierarchy. For example, the Internal Auditor should be independent of the Property Administrator, and the Disposal Committee should make its own decisions rather than simply follow the administrator's instructions.
+2. Detailed role and permission tree
+The following expands the roles into individual tasks. It combines the functions visible in your uploaded HTML with recommended access boundaries.
+Role responsibility explorer
+Expand all
+01System Administratorsystem_admin
+02Procurement & Purchasing Officerprocurement_officer
+03Storekeeper / Warehouse Custodianstorekeeper
+04Property Administrator / Stock Officerproperty_admin
+- Manage the central asset registry
+- Register and inspect asset identity, cost, condition and location
+- Track asset custodians and department assignments
+- Review transfer requests and related decisions
+- Coordinate annual physical counts
+- Review depreciation and net book value
+- Recommend damaged or obsolete assets for disposal
+- Prepare property and inventory reports
+Recommended restriction
+
+Should not be the sole final disposal authority.
+
+
+
+
+05Department Head / Deandepartment_head
+- View inventory belonging to the assigned department
+- Review departmental equipment and custodians
+- Submit equipment and transfer requests
+- Coordinate asset handovers
+- Submit maintenance requests
+- Review departmental asset accountability and clearance
+Recommended restriction
+
+Must not access or modify unrelated departments' restricted records.
+
+
+
+
+06End User / Faculty / Staffasset_custodian
+- View My Assigned Assets
+- Acknowledge receipt of assigned property electronically
+- Check assigned asset location and condition
+- Report loss, damage or theft
+- Create maintenance tickets for assigned assets
+- Follow incident and repair status
+Recommended restriction
+
+Cannot approve their own transfers, modify acquisition values or dispose of assets.
+
+
+
+
+07Maintenance / IT Techniciantechnician
+08Gate Security Officergate_security
+09Internal Auditorinternal_auditor
+10Finance Officerfinance_officer
+11Asset Disposal Committee Memberdisposal_committee
+
+3. Complete functional module tree
+DMU PROPERTY ASSET MANAGEMENT SYSTEM
+│
+├── 1. Authentication & User Management
+│   ├── Login / Logout
+│   ├── Create staff accounts
+│   ├── Assign user roles
+│   ├── Department-based access
+│   ├── Account activation / deactivation
+│   └── System audit logs
+│
+├── 2. Executive Dashboard
+│   ├── Total asset valuation
+│   ├── Registered assets
+│   ├── Active and assigned assets
+│   ├── Assets requiring maintenance
+│   ├── Pending disposal
+│   ├── Campus valuation chart
+│   └── Asset condition chart
+│
+├── 3. Procurement & Receiving
+│   ├── Register supplier
+│   ├── Create Purchase Order (PO)
+│   ├── Track order quantities
+│   ├── Record Goods Receiving Note (GRN)
+│   ├── Record supplier invoice
+│   ├── Match invoice with order
+│   └── Register received assets
+│
+├── 4. Warehouse & Stock Control
+│   ├── View available stock
+│   ├── Allocate temporary storage
+│   ├── Release available stock
+│   ├── Issue assets to recipients
+│   ├── Generate Stock Issue Voucher
+│   ├── Print QR asset tags
+│   └── View issue history
+│
+├── 5. Asset Registry
+│   ├── Register new property
+│   ├── Asset ID and serial number
+│   ├── Category and acquisition cost
+│   ├── Campus / department / room
+│   ├── Asset condition
+│   ├── Custodian information
+│   └── Search and filter assets
+│
+├── 6. My Assigned Assets
+│   ├── Personal asset inventory
+│   ├── Assignment acknowledgement
+│   ├── Report lost property
+│   ├── Report damaged property
+│   ├── Report theft
+│   └── Request maintenance
+│
+├── 7. Issuance & Transfers
+│   ├── Create transfer request
+│   ├── Review transfer status
+│   ├── Source and destination
+│   ├── Gate pass generation
+│   ├── Gate pass verification
+│   ├── Transit check-out
+│   └── Transit check-in
+│
+├── 8. Maintenance & Repairs
+│   ├── Create repair ticket
+│   ├── Record equipment problems
+│   ├── Assign technical work
+│   ├── Track repair progress
+│   ├── Record repair expenses
+│   └── Record repair outcomes
+│
+├── 9. Depreciation & Disposal
+│   ├── Acquisition value
+│   ├── Straight-line depreciation
+│   ├── Accumulated depreciation
+│   ├── Net book value
+│   ├── Disposal recommendation
+│   ├── Committee inspection
+│   ├── Scrap / Auction / Donation
+│   └── Disposal decision certificate
+│
+├── 10. Physical Inventory Audit
+│   ├── Start physical count session
+│   ├── QR asset scanning
+│   ├── Manual asset verification
+│   ├── Expected asset count
+│   ├── Verified present
+│   ├── Marked missing
+│   └── Not yet verified
+│
+├── 11. Finance & Compliance
+│   ├── Campus valuation
+│   ├── Department valuation
+│   ├── Invoice discrepancies
+│   ├── Goods receipt reconciliation
+│   ├── Asset incident review
+│   └── Compliance findings
+│
+└── 12. Reports & Documentation
+    ├── Asset inventory reports
+    ├── Departmental reports
+    ├── Physical count reports
+    ├── Stock issue records
+    ├── Gate passes
+    ├── Custodian clearance
+    └── Audit and financial records
+
+
+4. Asset lifecycle workflow tree
+This is how the project's main departments should interact when an asset is purchased, used, transferred, repaired, or disposed of.
+1. Procurement
+
+Supplier → Purchase Order → Goods Receipt
+
+2. Asset Registration
+
+Create asset record and unique identifier
+
+3. Warehouse
+
+Store asset → Print QR tag → Issue SIV
+
+4. Assignment
+
+Assign custodian → Acknowledge receipt
+
+5. Active Use
+
+Department or employee uses the asset
+
+6. Monitoring
+
+Maintenance → Transfer → Physical audit
+
+7. Disposal Review
+
+Depreciation → Recommendation → Committee
+
+8. Final Disposition
+
+Approved disposal → Physical action → Record closure

@@ -1,0 +1,109 @@
+DMU PROPERTY ASSET MANAGEMENT SYSTEM
+│
+├── 1. Authentication & User Management
+│   ├── Login / Logout
+│   ├── Create staff accounts
+│   ├── Assign user roles
+│   ├── Department-based access
+│   ├── Account activation / deactivation
+│   └── System audit logs
+│
+├── 2. Executive Dashboard
+│   ├── Total asset valuation
+│   ├── Registered assets
+│   ├── Active and assigned assets
+│   ├── Assets requiring maintenance
+│   ├── Pending disposal
+│   ├── Campus valuation chart
+│   └── Asset condition chart
+│
+├── 3. Procurement & Receiving
+│   ├── Register supplier
+│   ├── Create Purchase Order (PO)
+│   ├── Track order quantities
+│   ├── Record Goods Receiving Note (GRN)
+│   ├── Record supplier invoice
+│   ├── Match invoice with order
+│   └── Register received assets
+│
+├── 4. Warehouse & Stock Control
+│   ├── View available stock
+│   ├── Allocate temporary storage
+│   ├── Release available stock
+│   ├── Issue assets to recipients
+│   ├── Generate Stock Issue Voucher
+│   ├── Print QR asset tags
+│   └── View issue history
+│
+├── 5. Asset Registry
+│   ├── Register new property
+│   ├── Asset ID and serial number
+│   ├── Category and acquisition cost
+│   ├── Campus / department / room
+│   ├── Asset condition
+│   ├── Custodian information
+│   └── Search and filter assets
+│
+├── 6. My Assigned Assets
+│   ├── Personal asset inventory
+│   ├── Assignment acknowledgement
+│   ├── Report lost property
+│   ├── Report damaged property
+│   ├── Report theft
+│   └── Request maintenance
+│
+├── 7. Issuance & Transfers
+│   ├── Create transfer request
+│   ├── Review transfer status
+│   ├── Source and destination
+│   ├── Gate pass generation
+│   ├── Gate pass verification
+│   ├── Transit check-out
+│   └── Transit check-in
+│
+├── 8. Maintenance & Repairs
+│   ├── Create repair ticket
+│   ├── Record equipment problems
+│   ├── Assign technical work
+│   ├── Track repair progress
+│   ├── Record repair expenses
+│   └── Record repair outcomes
+│
+├── 9. Depreciation & Disposal
+│   ├── Acquisition value
+│   ├── Straight-line depreciation
+│   ├── Accumulated depreciation
+│   ├── Net book value
+│   ├── Disposal recommendation
+│   ├── Committee inspection
+│   ├── Scrap / Auction / Donation
+│   └── Disposal decision certificate
+│
+├── 10. Physical Inventory Audit
+│   ├── Start physical count session
+│   ├── QR asset scanning
+│   ├── Manual asset verification
+│   ├── Expected asset count
+│   ├── Verified present
+│   ├── Marked missing
+│   └── Not yet verified
+│
+├── 11. Finance & Compliance
+│   ├── Campus valuation
+│   ├── Department valuation
+│   ├── Invoice discrepancies
+│   ├── Goods receipt reconciliation
+│   ├── Asset incident review
+│   └── Compliance findings
+│
+└── 12. Reports & Documentation
+    ├── Asset inventory reports
+    ├── Departmental reports
+    ├── Physical count reports
+    ├── Stock issue records
+    ├── Gate passes
+    ├── Custodian clearance
+    └── Audit and financial records
+
+
+    

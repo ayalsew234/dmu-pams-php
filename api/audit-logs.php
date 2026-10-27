@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-$user = api_require_roles(['system_admin', 'property_admin']);
+$user = api_require_roles(['system_admin', 'property_admin', 'internal_auditor']);
 api_require_method('GET');
 
 try {
@@ -16,5 +16,4 @@ try {
 } catch (Throwable $e) {
     api_handle_error($e);
 }
-
 

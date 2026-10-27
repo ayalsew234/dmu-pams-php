@@ -96,12 +96,12 @@ try {
             $role = api_required_string($input, 'role', 'Role');
             $password = (string)($input['password'] ?? '');
             $department = api_optional_string($input, 'department');
-            $roles = ['system_admin', 'property_admin', 'department_head', 'technician', 'gate_security'];
+            $roles = ['system_admin', 'property_admin', 'procurement_officer', 'storekeeper', 'department_head', 'asset_custodian', 'internal_auditor', 'disposal_committee', 'technician', 'gate_security'];
             if (!in_array($role, $roles, true)) {
                 throw new InvalidArgumentException('Select a valid system role.');
             }
-            if ($role === 'department_head' && $department === '') {
-                throw new InvalidArgumentException('Department is required for Department Head accounts.');
+            if (in_array($role, ['department_head', 'asset_custodian'], true) && $department === '') {
+                throw new InvalidArgumentException('Department is required for Department Head and Asset Custodian accounts.');
             }
             if (strlen($password) < 12) {
                 throw new InvalidArgumentException('Password must be at least 12 characters.');
@@ -115,7 +115,7 @@ try {
                 $fullName,
                 password_hash($password, PASSWORD_DEFAULT),
                 $role,
-                $role === 'department_head' ? $department : null,
+                in_array($role, ['department_head', 'asset_custodian'], true) ? $department : null,
             ]);
             api_audit('user_created', "Created account $username with role $role.");
             api_response(['success' => true, 'message' => 'User account created.'], 201);
@@ -160,12 +160,12 @@ try {
             $role = api_required_string($input, 'role', 'Role');
             $department = api_optional_string($input, 'department');
             $password = (string)($input['password'] ?? '');
-            $roles = ['system_admin', 'property_admin', 'department_head', 'technician', 'gate_security'];
+            $roles = ['system_admin', 'property_admin', 'procurement_officer', 'storekeeper', 'department_head', 'asset_custodian', 'internal_auditor', 'disposal_committee', 'technician', 'gate_security'];
             if (!in_array($role, $roles, true)) {
                 throw new InvalidArgumentException('Select a valid system role.');
             }
-            if ($role === 'department_head' && $department === '') {
-                throw new InvalidArgumentException('Department is required for Department Head accounts.');
+            if (in_array($role, ['department_head', 'asset_custodian'], true) && $department === '') {
+                throw new InvalidArgumentException('Department is required for Department Head and Asset Custodian accounts.');
             }
             if ($password !== '' && strlen($password) < 12) {
                 throw new InvalidArgumentException('A new password must be at least 12 characters.');
@@ -196,7 +196,7 @@ try {
                 $update->execute([
                     $fullName,
                     $role,
-                    $role === 'department_head' ? $department : null,
+                    in_array($role, ['department_head', 'asset_custodian'], true) ? $department : null,
                     password_hash($password, PASSWORD_DEFAULT),
                     $userId,
                 ]);
@@ -207,7 +207,7 @@ try {
                 $update->execute([
                     $fullName,
                     $role,
-                    $role === 'department_head' ? $department : null,
+                    in_array($role, ['department_head', 'asset_custodian'], true) ? $department : null,
                     $userId,
                 ]);
             }  

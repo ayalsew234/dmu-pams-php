@@ -2,6 +2,21 @@
 let assets = [];
 let transfers = [];
 let maintenance = [];
+let procurementData = { vendors: [], purchaseOrders: [], receipts: [] };
+let warehouseData = { assets: [], vouchers: [], custodians: [] };
+let custodianData = { assets: [], incidents: [] };
+let auditorData = {
+    overview: {},
+    valuationByCampus: [],
+    valuationByDepartment: [],
+    receiptAssetReconciliation: [],
+    invoiceDiscrepancies: [],
+    openIncidents: [],
+    inspections: [],
+    latestPhysicalCount: null
+};
+let disposalCommitteeCases = [];
+let currentTagAssetId = '';
 let physicalCountSession = null;
 let physicalCountLoadError = '';
 let currentUser = null;
@@ -139,6 +154,9 @@ const amharicTranslations = {
     'Temporary password (12+ chars)': 'ጊዜያዊ የይለፍ ቃል (12+ ቁምፊዎች)',
     'Department (for Dept Head)': 'መምሪያ (ለመምሪያ ኃላፊ)',
     'No property items found.': 'ምንም የንብረት ዕቃ አልተገኘም።',
+    'Flagged for review': 'ለግምገማ ተሰይሟል',
+    'Flag for Review': 'ለግምገማ ሰይም',
+    'Clear Review Flag': 'የግምገማ ምልክት አጽዳ',
     'Choose Asset': 'ንብረት ይምረጡ',
     'Low Priority': 'ዝቅተኛ ቅድሚያ',
     'Medium Priority': 'መካከለኛ ቅድሚያ',
@@ -255,7 +273,12 @@ async function requestJson(url, options = {}) {
     const roleNames = {
         system_admin: 'System Administrator',
         property_admin: 'Property Admin / Stock Officer',
+        procurement_officer: 'Procurement & Purchasing Officer',
+        storekeeper: 'Storekeeper / Warehouse Custodian',
         department_head: 'Department Head / Dean',
+        asset_custodian: 'End-User / Faculty / Staff',
+        internal_auditor: 'Internal Auditor & Finance Officer',
+        disposal_committee: 'Asset Disposal Committee Member',
         technician: 'Maintenance / IT Technician',
         gate_security: 'Gate Security Officer'
     };
@@ -351,8 +374,13 @@ async function requestJson(url, options = {}) {
     function applyRoleAccess() {
         const role = currentUser.role;
         const access = {
-            system_admin: ['dashboard', 'registry', 'transfers', 'maintenance', 'disposal', 'audit', 'reports', 'users', 'audit-logs'],
-            property_admin: ['dashboard', 'registry', 'transfers', 'maintenance', 'disposal', 'audit', 'reports', 'audit-logs'],
+            system_admin: ['dashboard', 'procurement', 'warehouse', 'registry', 'transfers', 'maintenance', 'disposal', 'audit', 'reports', 'users', 'audit-logs'],
+            property_admin: ['dashboard', 'procurement', 'warehouse', 'registry', 'transfers', 'maintenance', 'disposal', 'audit', 'reports', 'audit-logs'],
+            internal_auditor: ['dashboard', 'registry', 'audit', 'compliance', 'reports', 'audit-logs'],
+            disposal_committee: ['disposal-committee'],
+            procurement_officer: ['procurement'],
+            storekeeper: ['warehouse'],
+            asset_custodian: ['my-assets'],
             department_head: ['registry', 'transfers', 'maintenance'],
             technician: ['registry', 'maintenance'],
             gate_security: ['transfers']
@@ -370,7 +398,7 @@ async function requestJson(url, options = {}) {
         document.getElementById('roleOverview').classList.toggle('hidden', role !== 'system_admin');
 
         const canManageAssets = ['system_admin', 'property_admin', 'department_head'].includes(role);
-        const canLogMaintenance = ['system_admin', 'property_admin', 'department_head', 'technician'].includes(role);
+        const canLogMaintenance = ['system_admin', 'property_admin', 'department_head', 'asset_custodian', 'technician'].includes(role);
         const canCreateTransfers = ['system_admin', 'property_admin', 'department_head'].includes(role);
         ['dashboardAddAssetButton', 'registryAddAssetButton'].forEach(id => {
             document.getElementById(id).classList.toggle('hidden', !canManageAssets);
@@ -384,7 +412,8 @@ async function requestJson(url, options = {}) {
         document.getElementById('gateScannerPanel').classList.toggle('hidden', !['system_admin', 'property_admin', 'gate_security'].includes(role));
         document.getElementById('transfersTable').classList.toggle('hidden', role === 'gate_security');
         document.getElementById('nav-users').classList.toggle('hidden', role !== 'system_admin');
-        document.getElementById('nav-audit-logs').classList.toggle('hidden', !['system_admin', 'property_admin'].includes(role));
+        document.getElementById('nav-audit-logs').classList.toggle('hidden', !['system_admin', 'property_admin', 'internal_auditor'].includes(role));
+        document.getElementById('maintenanceAdminFields').classList.toggle('hidden', role === 'asset_custodian');
         const departmentInput = document.getElementById('new-department');
         departmentInput.readOnly = role === 'department_head';
         if (role === 'department_head') departmentInput.value = currentUser.department || '';
@@ -407,7 +436,7 @@ async function requestJson(url, options = {}) {
             ? document.querySelector(`#tab-users input[name="department"][form="${formId}"]`)
             : document.querySelector('#tab-users input[name="department"]');
         if (!department) return;
-        department.required = roleSelect.value === 'department_head';
+        department.required = ['department_head', 'asset_custodian'].includes(roleSelect.value);
     }
 
     async function loadUsers() {
@@ -616,35 +645,88 @@ async function loadAllData() {
     try {
         const role = currentUser.role;
         const requests = [];
-        if (['system_admin', 'property_admin', 'department_head', 'technician'].includes(role)) {
+        if (['system_admin', 'property_admin', 'department_head', 'internal_auditor', 'technician'].includes(role)) {
             requests.push(requestJson('api/assets.php').then(result => { assets = result.data; }));
+        } else if (role === 'asset_custodian') {
+            requests.push(requestJson('api/custodian.php').then(result => {
+                custodianData = result.data;
+                assets = custodianData.assets;
+            }));
         } else {
             assets = [];
         }
+        if (role !== 'asset_custodian') custodianData = { assets: [], incidents: [] };
         if (['system_admin', 'property_admin', 'department_head'].includes(role)) {
             requests.push(requestJson('api/transfers.php').then(result => { transfers = result.data; }));
         } else {
             transfers = [];
         }
-        if (['system_admin', 'property_admin', 'department_head', 'technician'].includes(role)) {
+        if (['system_admin', 'property_admin', 'department_head', 'asset_custodian', 'technician'].includes(role)) {
             requests.push(requestJson('api/maintenance.php').then(result => { maintenance = result.data; }));
         } else {
             maintenance = [];
         }
+        if (['system_admin', 'property_admin', 'procurement_officer'].includes(role)) {
+            requests.push(requestJson('api/procurement.php').then(result => {
+                procurementData = result.data;
+                renderProcurement();
+            }));
+        } else {
+            procurementData = { vendors: [], purchaseOrders: [], receipts: [] };
+        }
+        if (['system_admin', 'property_admin', 'storekeeper'].includes(role)) {
+            requests.push(requestJson('api/warehouse.php').then(result => {
+                warehouseData = result.data;
+                renderWarehouse();
+            }));
+        } else {
+            warehouseData = { assets: [], vouchers: [], custodians: [] };
+        }
+        if (role === 'internal_auditor') {
+            requests.push(requestJson('api/auditor.php').then(result => { auditorData = result.data; }));
+        } else {
+            auditorData = {
+                overview: {},
+                valuationByCampus: [],
+                valuationByDepartment: [],
+                receiptAssetReconciliation: [],
+                invoiceDiscrepancies: [],
+                openIncidents: [],
+                inspections: [],
+                latestPhysicalCount: null
+            };
+        }
+        if (role === 'disposal_committee') {
+            requests.push(requestJson('api/disposal-committee.php').then(result => {
+                disposalCommitteeCases = result.data;
+            }));
+        } else {
+            disposalCommitteeCases = [];
+        }
         await Promise.all(requests);
 
-        if (['system_admin', 'property_admin'].includes(role)) renderDashboard();
+        if (['system_admin', 'property_admin', 'internal_auditor'].includes(role)) renderDashboard();
         renderAssetsTable();
         renderTransfersTable();
         renderMaintenanceGrid();
+        renderMaintenanceGrid('custodianMaintenanceGrid');
+        renderCustodianWorkspace();
+        if (role === 'internal_auditor') renderAuditorWorkspace();
         renderDisposalTable();
+        if (role === 'disposal_committee') renderDisposalCommitteeCases();
+        if (!['system_admin', 'property_admin', 'procurement_officer'].includes(role)) {
+            renderProcurement();
+        }
+        if (!['system_admin', 'property_admin', 'storekeeper'].includes(role)) {
+            renderWarehouse();
+        }
     } catch (err) {
         console.error('Failed to load PAMS data:', err);
         showToast(`Could not load data: ${err.message}`);
         return;
     }
 
-    if (['system_admin', 'property_admin'].includes(currentUser.role)) {
+    if (['system_admin', 'property_admin', 'internal_auditor'].includes(currentUser.role)) {
         try {
             const resAudit = await requestJson('api/physical-count.php');
             physicalCountSession = resAudit.data;
@@ -666,13 +748,272 @@ async function loadAllData() {
             showToast(`Could not load user accounts: ${err.message}`);
         }
     }
-    if (['system_admin', 'property_admin'].includes(currentUser.role)) {
+    if (['system_admin', 'property_admin', 'internal_auditor'].includes(currentUser.role)) {
         try {
             await loadAuditLogs();
         } catch (err) {
             console.error('Failed to load audit logs:', err);
             showToast(`Could not load audit logs: ${err.message}`);
         }
+    }
+}
+
+function renderProcurement() {
+    const vendorSelect = document.getElementById('procurementVendorSelect');
+    const orderSelect = document.getElementById('receiptPurchaseOrderSelect');
+    const selectedVendor = vendorSelect.value;
+    const selectedOrder = orderSelect.value;
+
+    vendorSelect.innerHTML = '<option value="">Select supplier</option>' + procurementData.vendors.map(vendor =>
+        `<option value="${Number(vendor.id)}">${escapeHtml(vendor.name)}</option>`
+    ).join('');
+    vendorSelect.value = selectedVendor;
+
+    const outstandingOrders = procurementData.purchaseOrders.filter(order =>
+        order.status !== 'Received' && order.status !== 'Cancelled'
+    );
+    orderSelect.innerHTML = '<option value="">Select an outstanding order</option>' + outstandingOrders.map(order => {
+        const remaining = Number(order.quantity) - Number(order.received_quantity);
+        return `<option value="${escapeHtml(order.id)}">${escapeHtml(order.id)} — ${escapeHtml(order.item_name)} (${remaining} remaining)</option>`;
+    }).join('');
+    orderSelect.value = selectedOrder;
+    updateReceiptQuantityLimit();
+
+    document.getElementById('purchaseOrdersTableBody').innerHTML = procurementData.purchaseOrders.length
+        ? procurementData.purchaseOrders.map(order => `
+            <tr>
+                <td class="p-3 font-medium">${escapeHtml(order.id)}</td>
+                <td class="p-3">${escapeHtml(order.vendor_name)}</td>
+                <td class="p-3">${escapeHtml(order.item_name)}<span class="block text-slate-500">${escapeHtml(order.campus)} / ${escapeHtml(order.department)}</span></td>
+                <td class="p-3">${Number(order.received_quantity)} / ${Number(order.quantity)}</td>
+                <td class="p-3">${Number(order.unit_cost).toLocaleString()}</td>
+                <td class="p-3">${escapeHtml(order.status)}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="6" class="p-4 text-center text-slate-500">No purchase orders yet.</td></tr>';
+
+    document.getElementById('goodsReceiptsTableBody').innerHTML = procurementData.receipts.length
+        ? procurementData.receipts.map(receipt => {
+            const difference = Number(receipt.invoice_difference || 0);
+            const invoiceAction = receipt.invoice_status === 'Matched'
+                ? '<span class="text-emerald-700 font-medium">Matched</span>'
+                : `<form onsubmit="matchProcurementInvoice(event, '${escapeHtml(receipt.id)}')" class="flex min-w-64 gap-1">
+                    <input name="invoiceNumber" required value="${escapeHtml(receipt.invoice_number || '')}" placeholder="Invoice #" class="w-24 min-w-0 p-1 rounded border dark:bg-slate-900 dark:border-slate-600">
+                    <input name="invoiceAmount" required type="number" min="0" step="0.01" value="${receipt.invoice_amount === null ? '' : escapeHtml(receipt.invoice_amount)}" placeholder="Amount" class="w-24 min-w-0 p-1 rounded border dark:bg-slate-900 dark:border-slate-600">
+                    <button type="submit" class="rounded bg-indigo-900 px-2 py-1 text-white">Match</button>
+                </form>`;
+            return `<tr>
+                <td class="p-3 font-medium">${escapeHtml(receipt.id)}</td>
+                <td class="p-3">${escapeHtml(receipt.purchase_order_id)}<span class="block text-slate-500">${escapeHtml(receipt.vendor_name)}</span></td>
+                <td class="p-3">${escapeHtml(receipt.item_name)} × ${Number(receipt.quantity_received)}</td>
+                <td class="p-3">${escapeHtml(receipt.invoice_number || 'Not entered')}</td>
+                <td class="p-3">${receipt.invoice_amount === null ? '—' : Number(receipt.invoice_amount).toLocaleString()}</td>
+                <td class="p-3">${escapeHtml(receipt.invoice_status)}${receipt.invoice_status === 'Discrepant' ? `<span class="block text-rose-600">${difference > 0 ? '+' : ''}${difference.toLocaleString()} ETB</span>` : ''}</td>
+                <td class="p-3">${invoiceAction}</td>
+            </tr>`;
+        }).join('')
+        : '<tr><td colspan="7" class="p-4 text-center text-slate-500">No goods have been received yet.</td></tr>';
+}
+
+function updateReceiptQuantityLimit() {
+    const order = procurementData.purchaseOrders.find(item =>
+        item.id === document.getElementById('receiptPurchaseOrderSelect').value
+    );
+    const quantityInput = document.querySelector('#tab-procurement form[onsubmit="recordGoodsReceipt(event)"] [name="quantityReceived"]');
+    if (!quantityInput) return;
+    const remaining = order ? Number(order.quantity) - Number(order.received_quantity) : 0;
+    quantityInput.max = remaining || '';
+    quantityInput.placeholder = order ? `Quantity received (up to ${remaining})` : 'Quantity received';
+}
+
+function renderWarehouse() {
+    const assetsBody = document.getElementById('warehouseAssetsTableBody');
+    const vouchersBody = document.getElementById('stockIssuesTableBody');
+    if (!assetsBody || !vouchersBody) return;
+
+    const recipientSelect = document.getElementById('warehouseRecipientUser');
+    const selectedRecipient = recipientSelect.value;
+    recipientSelect.innerHTML = '<option value="">Optional: link to a staff account</option>' + warehouseData.custodians.map(person =>
+        `<option value="${Number(person.id)}">${escapeHtml(person.full_name)} — ${escapeHtml(person.department)}</option>`
+    ).join('');
+    recipientSelect.value = selectedRecipient;
+
+    assetsBody.innerHTML = warehouseData.assets.length
+        ? warehouseData.assets.map(asset => {
+            const available = ['In Stock', 'Temporary Storage'].includes(asset.stock_status);
+            const storage = asset.storage_location ? `: ${escapeHtml(asset.storage_location)}` : '';
+            const tagged = asset.tagged_at
+                ? `<span class="text-emerald-700">Tagged ${escapeHtml(asset.tagged_at)}</span>`
+                : '<span class="text-amber-700">Not tagged</span>';
+            return `<tr>
+                <td class="p-3"><input type="checkbox" class="warehouse-asset-select" data-asset-id="${escapeHtml(asset.id)}" ${available ? '' : 'disabled'} aria-label="Select ${escapeHtml(asset.id)}"></td>
+                <td class="p-3"><strong class="font-mono">${escapeHtml(asset.id)}</strong><span class="block">${escapeHtml(asset.name)}</span><span class="text-slate-500">${escapeHtml(asset.serial)}</span></td>
+                <td class="p-3">${escapeHtml(asset.campus)}<span class="block text-slate-500">${escapeHtml(asset.building)} / ${escapeHtml(asset.room)}</span></td>
+                <td class="p-3">${escapeHtml(asset.custodian)}<span class="block text-slate-500">${escapeHtml(asset.department)}</span></td>
+                <td class="p-3"><strong>${escapeHtml(asset.stock_status)}</strong><span class="block text-slate-500">${storage}</span></td>
+                <td class="p-3">${escapeHtml(asset.condition)}</td>
+                <td class="p-3"><button type="button" onclick="viewTagModal('${escapeHtml(asset.id)}')" class="rounded bg-indigo-900 px-2 py-1 text-white">Print / Tag</button><span class="mt-1 block">${tagged}</span></td>
+            </tr>`;
+        }).join('')
+        : '<tr><td colspan="7" class="p-4 text-center text-slate-500">No assets are registered in stock.</td></tr>';
+
+    vouchersBody.innerHTML = warehouseData.vouchers.length
+        ? warehouseData.vouchers.map(voucher => `
+            <tr>
+                <td class="p-3 font-mono font-bold">${escapeHtml(voucher.id)}</td>
+                <td class="p-3">${escapeHtml(voucher.issue_date)}</td>
+                <td class="p-3">${escapeHtml(voucher.recipient_name)}<span class="block text-slate-500">${escapeHtml(voucher.recipient_department)}</span></td>
+                <td class="p-3">${Number(voucher.item_count)}<span class="block text-slate-500">${voucher.items.map(item => escapeHtml(item.asset_id)).join(', ')}</span></td>
+                <td class="p-3">${escapeHtml(voucher.purpose || '—')}</td>
+                <td class="p-3">${escapeHtml(voucher.issued_by || 'Account unavailable')}</td>
+                <td class="p-3"><button type="button" onclick="openStockIssueVoucher('${escapeHtml(voucher.id)}')" class="rounded bg-slate-200 px-2 py-1 dark:bg-slate-700">Print SIV</button></td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="7" class="p-4 text-center text-slate-500">No stock issue vouchers recorded yet.</td></tr>';
+
+    document.getElementById('warehouseSelectAll').checked = false;
+}
+
+function setWarehouseRecipient(select) {
+    const recipient = warehouseData.custodians.find(person => String(person.id) === select.value);
+    select.form.elements.recipientName.value = recipient ? recipient.full_name : '';
+    select.form.elements.recipientDepartment.value = recipient ? recipient.department : '';
+}
+
+function selectedWarehouseAssets() {
+    return [...document.querySelectorAll('.warehouse-asset-select:checked')].map(input => input.dataset.assetId);
+}
+
+function toggleWarehouseSelection(selectAll) {
+    document.querySelectorAll('.warehouse-asset-select:not(:disabled)').forEach(input => {
+        input.checked = selectAll.checked;
+    });
+}
+
+async function submitWarehouseAction(action, fields = {}) {
+    const assetIds = selectedWarehouseAssets();
+    if (!assetIds.length) {
+        showToast('Select at least one available stock item first.');
+        return null;
+    }
+    try {
+        const result = await requestJson('api/warehouse.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...fields, action, assetIds })
+        });
+        showToast(result.message);
+        await loadAllData();
+        if (result.voucherId) openStockIssueVoucher(result.voucherId);
+        return result;
+    } catch (err) {
+        console.error(`Warehouse ${action} failed:`, err);
+        showToast(`Could not complete warehouse action: ${err.message}`);
+        return null;
+    }
+}
+
+async function issueSelectedStock(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fields = Object.fromEntries(new FormData(form).entries());
+    const result = await submitWarehouseAction('issue', fields);
+    if (result) form.reset();
+}
+
+async function allocateSelectedStock(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fields = Object.fromEntries(new FormData(form).entries());
+    const result = await submitWarehouseAction('allocate', fields);
+    if (result) form.reset();
+}
+
+async function releaseSelectedStock() {
+    await submitWarehouseAction('release');
+}
+
+function openStockIssueVoucher(voucherId) {
+    const voucher = warehouseData.vouchers.find(item => item.id === voucherId);
+    if (!voucher) {
+        showToast('Stock issue voucher was not found. Reload the warehouse list and try again.');
+        return;
+    }
+    document.getElementById('siv-number').textContent = voucher.id;
+    document.getElementById('siv-date').textContent = voucher.issue_date;
+    document.getElementById('siv-recipient').textContent = voucher.recipient_name;
+    document.getElementById('siv-department').textContent = voucher.recipient_department;
+    document.getElementById('siv-purpose').textContent = voucher.purpose || '—';
+    document.getElementById('siv-items').innerHTML = voucher.items.map((item, index) => `
+        <tr>
+            <td class="border p-2">${index + 1}</td>
+            <td class="border p-2 font-mono">${escapeHtml(item.asset_id)}</td>
+            <td class="border p-2">${escapeHtml(item.asset_name)}</td>
+            <td class="border p-2">${escapeHtml(item.serial)}</td>
+            <td class="border p-2">${escapeHtml(item.condition_at_issue)}</td>
+        </tr>
+    `).join('');
+    openModal('sivModal');
+}
+
+async function submitProcurementForm(event, action, successMessage) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    try {
+        const payload = Object.fromEntries(new FormData(form).entries());
+        payload.action = action;
+        const result = await requestJson('api/procurement.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        showToast(successMessage(result));
+        form.reset();
+        await loadAllData();
+    } catch (err) {
+        console.error(`Procurement ${action} failed:`, err);
+        showToast(`Could not complete procurement action: ${err.message}`);
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+function registerSupplier(event) {
+    return submitProcurementForm(event, 'vendor', result => `${result.message} Supplier ID: ${result.id}`);
+}
+
+function createPurchaseOrder(event) {
+    return submitProcurementForm(event, 'order', result => `${result.message} PO: ${result.id}`);
+}
+
+function recordGoodsReceipt(event) {
+    return submitProcurementForm(event, 'receive', result =>
+        `${result.message} GRN: ${result.receiptId}${result.invoiceStatus === 'Discrepant' ? ' Invoice discrepancy requires review.' : ''}`
+    );
+}
+
+async function matchProcurementInvoice(event, receiptId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    try {
+        const payload = Object.fromEntries(new FormData(form).entries());
+        payload.receiptId = receiptId;
+        const result = await requestJson('api/procurement.php', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Invoice matching failed:', err);
+        showToast(`Could not match invoice: ${err.message}`);
+    } finally {
+        submitButton.disabled = false;
     }
 }
 
@@ -744,7 +1085,8 @@ function renderAssetsTable() {
     tbody.innerHTML = '';
 
     const filtered = assets.filter(a => {
-        const searchable = [a.name, a.id, a.custodian, a.serial, a.campus, a.department].join(' ').toLowerCase();
+        const searchable = [a.name, a.id, a.custodian, a.serial, a.campus, a.department,
+            a.review_flagged_at ? 'flagged for review' : ''].join(' ').toLowerCase();
         const matchSearch = searchable.includes(query);
         const matchCampus = campFilter === 'All' || a.campus === campFilter;
         const matchCat = catFilter === 'All' || a.category === catFilter;
@@ -758,12 +1100,15 @@ function renderAssetsTable() {
     }
 
     filtered.forEach(item => {
+        const canResubmitDisposal = item.status === 'Pending Disposal' && item.disposal_case_status === 'Rejected';
+        const canManageReviewFlag = ['system_admin', 'property_admin', 'internal_auditor'].includes(currentUser.role);
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                 <td class="p-3.5">
                     <div class="font-mono text-indigo-600 dark:text-amber-400 font-bold">${escapeHtml(item.id)}</div>
                     <div class="font-semibold text-sm">${escapeHtml(item.name)}</div>
                     <span class="text-[10px] text-slate-400">S/N: ${escapeHtml(item.serial)}</span>
+                    ${item.review_flagged_at ? '<span class="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">Flagged for review</span>' : ''}
                 </td>
                 <td class="p-3.5"><span class="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">${escapeHtml(item.category)}</span></td>
                 <td class="p-3.5">
@@ -775,7 +1120,11 @@ function renderAssetsTable() {
                 <td class="p-3.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">${escapeHtml(item.condition)}</span></td>
                 <td class="p-3.5 text-right space-x-2">
                     <button onclick="viewTagModal('${item.id}')" class="p-1.5 rounded bg-slate-100 dark:bg-slate-700">Tag Sheet</button>
-                    ${['system_admin', 'property_admin'].includes(currentUser.role) && (item.status === 'Pending Disposal' ? '' : `<button onclick="flagDisposal('${escapeHtml(item.id)}')" class="p-1.5 rounded bg-rose-100 text-rose-800">Archive / Disposal Review</button>`)}
+                    ${currentUser.role === 'system_admin' ? `<button onclick="deleteAsset('${escapeHtml(item.id)}')" class="p-1.5 rounded bg-rose-100 text-rose-800">Delete Asset</button>` : ''}
+                    ${canManageReviewFlag ? `<button onclick="setAssetReviewFlag('${escapeHtml(item.id)}', ${item.review_flagged_at ? 'false' : 'true'})" class="p-1.5 rounded bg-amber-100 text-amber-900">${item.review_flagged_at ? 'Clear Review Flag' : 'Flag for Review'}</button>` : ''}
+                    ${['system_admin', 'property_admin'].includes(currentUser.role) && (item.status === 'Pending Disposal'
+                        ? (canResubmitDisposal ? `<button onclick="flagDisposal('${escapeHtml(item.id)}')" class="p-1.5 rounded bg-amber-100 text-amber-900">Resubmit Disposal Review</button>` : '')
+                        : `<button onclick="flagDisposal('${escapeHtml(item.id)}')" class="p-1.5 rounded bg-rose-100 text-rose-800">Archive / Disposal Review</button>`)}
                 </td>
             </tr>
         `;
@@ -1040,8 +1389,9 @@ function showGateScanResult(type, content, isHtml = false) {
 }
 
 // Render Maintenance Tickets
-function renderMaintenanceGrid() {
-    const grid = document.getElementById('maintenanceGrid');
+function renderMaintenanceGrid(containerId = 'maintenanceGrid') {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
     grid.innerHTML = '';
     maintenance.forEach(m => {
         const status = m.status === 'Under Repair' ? 'In Progress' : m.status;
@@ -1081,6 +1431,213 @@ function renderMaintenanceGrid() {
     });
 }
 
+function renderCustodianWorkspace() {
+    const assetsBody = document.getElementById('custodianAssetsTableBody');
+    const incidentsBody = document.getElementById('custodianIncidentsTableBody');
+    const incidentAssetSelect = document.getElementById('incidentAssetId');
+    if (!assetsBody || !incidentsBody || !incidentAssetSelect) return;
+
+    const selectedAsset = incidentAssetSelect.value;
+    incidentAssetSelect.innerHTML = '<option value="">Select your assigned asset</option>' + custodianData.assets.map(asset =>
+        `<option value="${escapeHtml(asset.id)}">${escapeHtml(asset.id)} — ${escapeHtml(asset.name)}</option>`
+    ).join('');
+    incidentAssetSelect.value = selectedAsset;
+
+    assetsBody.innerHTML = custodianData.assets.length
+        ? custodianData.assets.map(asset => {
+            const acknowledged = Boolean(asset.acknowledged_at);
+            const acknowledgement = acknowledged
+                ? `<span class="font-medium text-emerald-700">Acknowledged ${escapeHtml(asset.acknowledged_at)}</span>`
+                : '<span class="text-amber-700">Awaiting your acknowledgement</span>';
+            const action = acknowledged
+                ? '<span class="text-slate-500">Receipt confirmed</span>'
+                : `<button type="button" onclick="acknowledgeCustodianAsset('${escapeHtml(asset.id)}')" class="rounded bg-indigo-900 px-3 py-1.5 text-white">Confirm receipt / e-sign</button>`;
+            return `<tr>
+                <td class="p-3"><strong class="font-mono">${escapeHtml(asset.id)}</strong><span class="block">${escapeHtml(asset.name)}</span><span class="text-slate-500">${escapeHtml(asset.category)}</span></td>
+                <td class="p-3">${escapeHtml(asset.campus)}<span class="block text-slate-500">${escapeHtml(asset.building)} / ${escapeHtml(asset.room)}</span></td>
+                <td class="p-3">${escapeHtml(asset.condition)}<span class="block text-slate-500">${escapeHtml(asset.status)}</span></td>
+                <td class="p-3">${acknowledgement}</td>
+                <td class="p-3">${action}</td>
+            </tr>`;
+        }).join('')
+        : '<tr><td colspan="5" class="p-4 text-center text-slate-500">No assets are currently assigned to your account.</td></tr>';
+
+    incidentsBody.innerHTML = custodianData.incidents.length
+        ? custodianData.incidents.map(incident => `
+            <tr>
+                <td class="p-2">${escapeHtml(incident.reported_at)}</td>
+                <td class="p-2">${escapeHtml(incident.asset_id)}<span class="block text-slate-500">${escapeHtml(incident.asset_name)}</span></td>
+                <td class="p-2">${escapeHtml(incident.incident_type)}<span class="block text-slate-500">${escapeHtml(incident.status)}</span></td>
+                <td class="p-2">${escapeHtml(incident.description)}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="4" class="p-3 text-center text-slate-500">No incident reports submitted.</td></tr>';
+}
+
+function renderAuditorWorkspace() {
+    const overview = auditorData.overview || {};
+    document.getElementById('auditor-asset-count').textContent = Number(overview.asset_count || 0).toLocaleString();
+    document.getElementById('auditor-asset-value').textContent = `${Number(overview.registered_value || 0).toLocaleString()} ETB`;
+    document.getElementById('auditor-invoice-count').textContent = auditorData.invoiceDiscrepancies.length.toLocaleString();
+    document.getElementById('auditor-incident-count').textContent = auditorData.openIncidents.length.toLocaleString();
+
+    const count = auditorData.latestPhysicalCount;
+    document.getElementById('auditor-count-summary').textContent = count
+        ? `Session #${count.id} (${count.status}) — ${Number(count.verified_count || 0)} verified, ${Number(count.missing_count || 0)} marked missing, ${Number(count.pending_count || 0)} pending out of ${Number(count.expected_count || 0)} assets. Started ${count.started_at}.`
+        : 'No physical count session has been recorded.';
+
+    const renderValuations = (rows, bodyId) => {
+        document.getElementById(bodyId).innerHTML = rows.length
+            ? rows.map(row => `<tr><td class="p-3">${escapeHtml(row.label)}</td><td class="p-3">${Number(row.asset_count).toLocaleString()}</td><td class="p-3 font-medium">${Number(row.registered_value).toLocaleString()}</td></tr>`).join('')
+            : '<tr><td colspan="3" class="p-3 text-center text-slate-500">No valuation data available.</td></tr>';
+    };
+    renderValuations(auditorData.valuationByCampus, 'auditorCampusValuationBody');
+    renderValuations(auditorData.valuationByDepartment, 'auditorDepartmentValuationBody');
+
+    document.getElementById('auditorReceiptReconciliationBody').innerHTML = auditorData.receiptAssetReconciliation.length
+        ? auditorData.receiptAssetReconciliation.map(row => {
+            const variance = Number(row.quantity_difference);
+            const reconciled = variance === 0;
+            return `<tr>
+                <td class="p-3 font-mono">${escapeHtml(row.receipt_id)}<span class="block text-slate-500">${escapeHtml(row.purchase_order_id)}</span></td>
+                <td class="p-3">${escapeHtml(row.vendor_name)}<span class="block text-slate-500">${escapeHtml(row.item_name)}</span></td>
+                <td class="p-3">${Number(row.quantity_received).toLocaleString()}</td>
+                <td class="p-3">${Number(row.registered_asset_count).toLocaleString()}</td>
+                <td class="p-3 font-semibold ${reconciled ? 'text-emerald-700' : 'text-rose-700'}">${variance > 0 ? '+' : ''}${variance.toLocaleString()}${reconciled ? ' (reconciled)' : ' (quantity variance)'}</td>
+                <td class="p-3">${Number(row.value_difference || 0).toLocaleString()}</td>
+            </tr>`;
+        }).join('')
+        : '<tr><td colspan="6" class="p-3 text-center text-slate-500">No goods receipts available for reconciliation.</td></tr>';
+
+    document.getElementById('auditorInvoiceVarianceBody').innerHTML = auditorData.invoiceDiscrepancies.length
+        ? auditorData.invoiceDiscrepancies.map(row => `
+            <tr>
+                <td class="p-3 font-mono">${escapeHtml(row.receipt_id)}<span class="block text-slate-500">${escapeHtml(row.purchase_order_id)}</span></td>
+                <td class="p-3">${escapeHtml(row.vendor_name)}<span class="block text-slate-500">${escapeHtml(row.item_name)}</span></td>
+                <td class="p-3">${escapeHtml(row.invoice_number || 'Not supplied')}<span class="block text-slate-500">${Number(row.invoice_amount || 0).toLocaleString()} ETB</span></td>
+                <td class="p-3 font-semibold ${Number(row.invoice_difference) < 0 ? 'text-rose-700' : 'text-amber-700'}">${Number(row.invoice_difference || 0).toLocaleString()} ETB</td>
+                <td class="p-3">${escapeHtml(row.received_date)}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="5" class="p-3 text-center text-slate-500">No recorded invoice discrepancies.</td></tr>';
+
+    document.getElementById('auditorIncidentsBody').innerHTML = auditorData.openIncidents.length
+        ? auditorData.openIncidents.map(row => `
+            <tr>
+                <td class="p-3">${escapeHtml(row.reported_at)}<span class="block text-slate-500">${escapeHtml(row.reporter)}</span></td>
+                <td class="p-3">${escapeHtml(row.asset_id)}<span class="block text-slate-500">${escapeHtml(row.asset_name)}</span></td>
+                <td class="p-3">${escapeHtml(row.incident_type)}</td>
+                <td class="p-3">${escapeHtml(row.description)}</td>
+                <td class="p-3">${escapeHtml(row.status)}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="5" class="p-3 text-center text-slate-500">No unresolved asset incidents.</td></tr>';
+
+    const assetSelect = document.getElementById('auditorInspectionAsset');
+    const selectedAsset = assetSelect.value;
+    assetSelect.innerHTML = '<option value="">Optional: related asset</option>' + assets.map(asset =>
+        `<option value="${escapeHtml(asset.id)}">${escapeHtml(asset.id)} — ${escapeHtml(asset.name)}</option>`
+    ).join('');
+    assetSelect.value = selectedAsset;
+
+    document.getElementById('auditorInspectionsBody').innerHTML = auditorData.inspections.length
+        ? auditorData.inspections.map(row => `
+            <tr>
+                <td class="p-3">${escapeHtml(row.created_at)}<span class="block text-slate-500">${escapeHtml(row.inspector || 'Account unavailable')}</span></td>
+                <td class="p-3">${escapeHtml(row.inspection_type)}<span class="block font-semibold ${row.risk_level === 'High' ? 'text-rose-700' : row.risk_level === 'Medium' ? 'text-amber-700' : 'text-emerald-700'}">${escapeHtml(row.risk_level)} risk</span></td>
+                <td class="p-3"><strong>${escapeHtml(row.title)}</strong><span class="block whitespace-pre-wrap">${escapeHtml(row.findings)}</span></td>
+                <td class="p-3">${row.asset_id ? `${escapeHtml(row.asset_id)} — ${escapeHtml(row.asset_name || 'Asset unavailable')}` : '—'}</td>
+                <td class="p-3">${escapeHtml(row.status)}</td>
+                <td class="p-3">${row.status === 'Closed'
+                    ? '—'
+                    : `<select onchange="updateComplianceInspection(${Number(row.id)}, this.value)" class="rounded border p-1 dark:bg-slate-900 dark:border-slate-700">
+                        <option value="">Change status</option>
+                        <option value="Open">Open</option><option value="Under Review">Under Review</option><option value="Closed">Closed</option>
+                    </select>`}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="6" class="p-3 text-center text-slate-500">No inspection findings have been recorded.</td></tr>';
+}
+
+async function createComplianceInspection(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const payload = Object.fromEntries(new FormData(form).entries());
+    button.disabled = true;
+    try {
+        const result = await requestJson('api/auditor.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        showToast(result.message);
+        form.reset();
+        await loadAllData();
+    } catch (err) {
+        console.error('Could not record compliance inspection:', err);
+        showToast(`Could not record inspection: ${err.message}`);
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function updateComplianceInspection(inspectionId, status) {
+    if (!status) return;
+    try {
+        const result = await requestJson('api/auditor.php', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inspectionId, status })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Could not update compliance inspection:', err);
+        showToast(`Could not update inspection: ${err.message}`);
+        await loadAllData();
+    }
+}
+
+async function acknowledgeCustodianAsset(assetId) {
+    if (!window.confirm('Confirm that you received and accept responsibility for this assigned asset? This electronic acknowledgement will be recorded with your account and the current time.')) {
+        return;
+    }
+    try {
+        const result = await requestJson('api/custodian.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'acknowledge', assetId })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Could not acknowledge asset assignment:', err);
+        showToast(`Could not acknowledge assignment: ${err.message}`);
+    }
+}
+
+async function submitCustodianIncident(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const payload = Object.fromEntries(new FormData(form).entries());
+    payload.action = 'incident';
+    submitButton.disabled = true;
+    try {
+        const result = await requestJson('api/custodian.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        showToast(result.message);
+        form.reset();
+        await loadAllData();
+    } catch (err) {
+        console.error('Could not submit asset incident report:', err);
+        showToast(`Could not submit incident report: ${err.message}`);
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
 async function updateMaintenanceWorkorder(event, maintenanceId) {
     event.preventDefault();
     const form = event.target;
@@ -1110,35 +1667,255 @@ async function updateMaintenanceWorkorder(event, maintenanceId) {
 // Render 5-Year Straight-Line Depreciation & Disposal
 function renderDisposalTable() {
     const tbody = document.getElementById('disposalTableBody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    assets.forEach(ast => {
-        const acqYear = new Date(ast.acq_date).getFullYear();
-        const yearsElapsed = Math.max(0, new Date().getFullYear() - acqYear);
-        const cost = parseFloat(ast.cost);
-        const annualDep = cost / 5;
-        const accumulatedDep = Math.min(cost, annualDep * yearsElapsed);
-        const netBookValue = Math.max(0, cost - accumulatedDep);
-        const isFullyDepreciated = netBookValue === 0;
+    const now = new Date();
+    const asOf = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const rows = assets.map(ast => {
+        const [year, month, day] = String(ast.acq_date).slice(0, 10).split('-').map(Number);
+        const acquisitionDate = new Date(Date.UTC(year, month - 1, day));
+        const acquisitionTime = acquisitionDate.getTime();
+        const usefulLifeEnd = Date.UTC(year + 5, month - 1, day);
+        const cost = Number(ast.cost);
+        const invalidDate = !year || acquisitionDate.getUTCFullYear() !== year
+            || acquisitionDate.getUTCMonth() !== month - 1
+            || acquisitionDate.getUTCDate() !== day;
+        const depreciationRatio = invalidDate || asOf <= acquisitionTime
+            ? 0
+            : Math.min(1, (asOf - acquisitionTime) / (usefulLifeEnd - acquisitionTime));
+        const accumulatedDep = Math.round(cost * depreciationRatio * 100) / 100;
+        const netBookValue = Math.max(0, Math.round((cost - accumulatedDep) * 100) / 100);
+        const isFullyDepreciated = depreciationRatio === 1;
         const isPendingDisposal = ast.status === 'Pending Disposal';
-        const isRecommended = isPendingDisposal || isFullyDepreciated || ast.condition === 'Obsolete';
+        const canResubmitDisposal = isPendingDisposal && ast.disposal_case_status === 'Rejected';
+        const isRecommended = isPendingDisposal || isFullyDepreciated
+            || ast.condition === 'Obsolete' || ast.condition === 'Damaged';
+        const caseStatus = ast.disposal_case_status || '';
+        const isAwaitingCommittee = caseStatus === 'Requested' || caseStatus === 'Inspected';
+        return {
+            asset: ast,
+            cost,
+            accumulatedDep,
+            netBookValue,
+            isFullyDepreciated,
+            isRecommended,
+            canResubmitDisposal,
+            isAwaitingCommittee,
+            caseStatus
+        };
+    });
 
+    const money = value => `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB`;
+    document.getElementById('disposal-total-cost').textContent = money(
+        rows.reduce((total, row) => total + row.cost, 0)
+    );
+    document.getElementById('disposal-accumulated').textContent = money(
+        rows.reduce((total, row) => total + row.accumulatedDep, 0)
+    );
+    document.getElementById('disposal-net-book-value').textContent = money(
+        rows.reduce((total, row) => total + row.netBookValue, 0)
+    );
+    document.getElementById('disposal-awaiting-count').textContent = rows.filter(row => row.isAwaitingCommittee).length;
+
+    const query = document.getElementById('disposalSearch').value.trim().toLowerCase();
+    const filter = document.getElementById('disposalFilter').value;
+    const filteredRows = rows.filter(row => {
+        const { asset, isRecommended, isAwaitingCommittee, caseStatus } = row;
+        const matchesSearch = [asset.id, asset.name, asset.department].join(' ').toLowerCase().includes(query);
+        const matchesFilter = filter === 'all'
+            || (filter === 'recommended' && isRecommended)
+            || (filter === 'awaiting' && isAwaitingCommittee)
+            || (filter === 'rejected' && caseStatus === 'Rejected');
+        return matchesSearch && matchesFilter;
+    });
+
+    if (filteredRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">No assets match this search or filter.</td></tr>';
+        return;
+    }
+
+    filteredRows.forEach(row => {
+        const { asset: ast, cost, accumulatedDep, netBookValue, isFullyDepreciated,
+            isRecommended, canResubmitDisposal, isAwaitingCommittee, caseStatus } = row;
+        const isPendingDisposal = ast.status === 'Pending Disposal';
+        let disposalStatus = 'Retain in Active Service';
+        if (caseStatus === 'Approved') {
+            disposalStatus = 'Approved by Committee';
+        } else if (caseStatus === 'Rejected') {
+            disposalStatus = 'Rejected — resubmission available';
+        } else if (isAwaitingCommittee) {
+            disposalStatus = caseStatus === 'Inspected' ? 'Inspected — decision pending' : 'Awaiting committee inspection';
+        } else if (isPendingDisposal) {
+            disposalStatus = 'Pending disposal review';
+        } else if (isRecommended) {
+            disposalStatus = isFullyDepreciated ? 'Fully depreciated — recommend disposal'
+                : ast.condition === 'Obsolete' ? 'Obsolete — recommend disposal'
+                    : ast.condition === 'Damaged' ? 'Damaged — recommend inspection'
+                        : 'Recommend disposal review';
+        }
+        const canSubmit = !isAwaitingCommittee && caseStatus !== 'Approved';
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                <td class="p-3.5"><span class="font-mono text-indigo-600 dark:text-amber-400 font-bold">${escapeHtml(ast.id)}</span><p class="font-semibold">${escapeHtml(ast.name)}</p></td>
-                <td class="p-3.5 font-bold">${cost.toLocaleString()} ETB</td>
+                <td class="p-3.5"><span class="font-mono text-indigo-600 dark:text-amber-400 font-bold">${escapeHtml(ast.id)}</span><p class="font-semibold">${escapeHtml(ast.name)}</p><p class="text-[10px] text-slate-400">${escapeHtml(ast.department)}</p></td>
+                <td class="p-3.5 font-bold">${money(cost)}</td>
                 <td class="p-3.5">${escapeHtml(ast.acq_date)}</td>
                 <td class="p-3.5">5 Years</td>
-                <td class="p-3.5"><span class="font-bold ${isFullyDepreciated ? 'text-rose-500' : 'text-emerald-600'}">${netBookValue.toLocaleString()} ETB</span></td>
+                <td class="p-3.5"><span class="font-bold ${isFullyDepreciated ? 'text-rose-500' : 'text-emerald-600'}">${money(netBookValue)}</span></td>
                 <td class="p-3.5">
-                    ${isPendingDisposal ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">Pending Disposal Review</span>` : isRecommended ? `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-[10px] font-bold">Recommend Auction</span>` : `<span class="text-slate-400">Retain in Active Service</span>`}
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${caseStatus === 'Approved' ? 'bg-emerald-100 text-emerald-800' : caseStatus === 'Rejected' ? 'bg-rose-100 text-rose-800' : isAwaitingCommittee || ast.status === 'Pending Disposal' ? 'bg-amber-100 text-amber-800' : isRecommended ? 'bg-rose-100 text-rose-800' : 'text-slate-400'}">${escapeHtml(disposalStatus)}</span>
                 </td>
-                <td class="p-3.5 text-right">
-                    ${isRecommended && !isPendingDisposal ? `<button onclick="flagDisposal('${escapeHtml(ast.id)}')" class="bg-rose-600 text-white px-2.5 py-1 rounded text-xs">Flag Disposal</button>` : ''}
+                <td class="p-3.5 text-right space-x-2">
+                    ${canSubmit ? `<button onclick="flagDisposal('${escapeHtml(ast.id)}')" class="bg-rose-600 text-white px-2.5 py-1 rounded text-xs">${canResubmitDisposal ? 'Resubmit Request' : 'Submit for Review'}</button>` : ''}
+                    ${currentUser.role === 'system_admin' ? `<button onclick="deleteAsset('${escapeHtml(ast.id)}')" class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded text-xs">Delete</button>` : ''}
                 </td>
             </tr>
         `;
     });
+}
+
+function renderDisposalCommitteeCases() {
+    const tbody = document.getElementById('disposalCommitteeTableBody');
+    if (!tbody) return;
+    if (disposalCommitteeCases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">No assets are awaiting committee review.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = disposalCommitteeCases.map(caseRecord => {
+        const caseId = Number(caseRecord.id);
+        const location = [caseRecord.campus, caseRecord.department, caseRecord.building, caseRecord.room]
+            .filter(Boolean)
+            .map(escapeHtml)
+            .join(' / ');
+        let review = '<span class="text-slate-500">No further action required.</span>';
+        if (caseRecord.case_status === 'Inspected') {
+            review = `
+                <form class="space-y-2" onsubmit="return false">
+                    <label class="block font-medium" for="disposal-method-${caseId}">Proposed disposition</label>
+                    <select id="disposal-method-${caseId}" class="w-full rounded border p-2 dark:bg-slate-900 dark:border-slate-600">
+                        <option value="">Select method</option>
+                        <option value="Scrap">Scrap</option>
+                        <option value="Auction">Auction</option>
+                        <option value="Donation">Donation</option>
+                    </select>
+                    <label class="block font-medium" for="disposal-decision-notes-${caseId}">Decision notes</label>
+                    <textarea id="disposal-decision-notes-${caseId}" required maxlength="5000" rows="2" class="w-full rounded border p-2 dark:bg-slate-900 dark:border-slate-600" placeholder="Reason and conditions of decision"></textarea>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="recordDisposalDecision(${caseId}, 'Approved')" class="rounded bg-emerald-700 px-3 py-2 text-white">Approve & Issue Certificate</button>
+                        <button type="button" onclick="recordDisposalDecision(${caseId}, 'Rejected')" class="rounded bg-rose-700 px-3 py-2 text-white">Reject Request</button>
+                    </div>
+                </form>`;
+        } else if (caseRecord.case_status === 'Approved' && caseRecord.certificate_no) {
+            review = `
+                <p class="font-semibold">${escapeHtml(caseRecord.disposition)} approved</p>
+                <p class="font-mono">${escapeHtml(caseRecord.certificate_no)}</p>
+                <button type="button" onclick="printDisposalCertificate(${caseId})" class="mt-2 rounded bg-indigo-900 px-3 py-2 text-white">Print Certificate</button>`;
+        } else if (caseRecord.case_status === 'Rejected') {
+            review = `<p class="font-semibold text-rose-700">Rejected — ${escapeHtml(caseRecord.disposition || 'No method recorded')}</p>
+                <p class="mt-1 whitespace-pre-wrap">${escapeHtml(caseRecord.decision_notes || '')}</p>`;
+        }
+
+        let inspection = `<form class="space-y-2" onsubmit="return false">
+            <label class="block font-medium" for="disposal-inspection-${caseId}">Inspection findings</label>
+            <textarea id="disposal-inspection-${caseId}" required maxlength="10000" rows="3" class="w-full rounded border p-2 dark:bg-slate-900 dark:border-slate-600" placeholder="Condition, damage, repairability, and evidence"></textarea>
+            <button type="button" onclick="recordDisposalInspection(${caseId})" class="rounded bg-indigo-900 px-3 py-2 text-white">Record Inspection</button>
+        </form>`;
+        if (caseRecord.case_status !== 'Requested') {
+            inspection = `<p class="whitespace-pre-wrap">${escapeHtml(caseRecord.inspection_findings || 'No inspection findings recorded.')}</p>
+                <p class="mt-1 text-slate-500">${caseRecord.inspector_name ? `Inspected by ${escapeHtml(caseRecord.inspector_name)} · ` : ''}${escapeHtml(caseRecord.inspected_at || '')}</p>`;
+        }
+
+        return `<tr class="align-top">
+            <td class="p-3.5"><span class="font-mono font-bold">${escapeHtml(caseRecord.asset_id)}</span><p class="font-semibold">${escapeHtml(caseRecord.asset_name)}</p><p>${escapeHtml(caseRecord.category)}</p></td>
+            <td class="p-3.5"><p>${escapeHtml(caseRecord.condition)}</p><p>${location}</p><p>${parseFloat(caseRecord.cost || 0).toLocaleString()} ETB</p></td>
+            <td class="p-3.5"><span class="rounded bg-slate-100 px-2 py-1 font-semibold dark:bg-slate-700">${escapeHtml(caseRecord.case_status)}</span></td>
+            <td class="p-3.5">${inspection}</td>
+            <td class="p-3.5">${review}</td>
+        </tr>`;
+    }).join('');
+}
+
+async function recordDisposalInspection(caseId) {
+    const findings = document.getElementById(`disposal-inspection-${caseId}`).value.trim();
+    if (!findings) {
+        showToast('Enter inspection findings before recording the inspection.');
+        return;
+    }
+    try {
+        const result = await requestJson('api/disposal-committee.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caseId, inspectionFindings: findings })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Failed to record disposal inspection:', err);
+        showToast(`Could not record inspection: ${err.message}`);
+    }
+}
+
+async function recordDisposalDecision(caseId, decision) {
+    const disposition = document.getElementById(`disposal-method-${caseId}`).value;
+    const decisionNotes = document.getElementById(`disposal-decision-notes-${caseId}`).value.trim();
+    if (!disposition || !decisionNotes) {
+        showToast('Select a disposal method and enter committee decision notes.');
+        return;
+    }
+    const confirmSignature = decision === 'Approved'
+        ? window.confirm(`Approve ${disposition.toLowerCase()} for this asset and issue the certificate under your account name?`)
+        : false;
+    if (decision === 'Approved' && !confirmSignature) return;
+
+    try {
+        const result = await requestJson('api/disposal-committee.php', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caseId, decision, disposition, decisionNotes, confirmSignature })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Failed to record disposal committee decision:', err);
+        showToast(`Could not record committee decision: ${err.message}`);
+    }
+}
+
+function printDisposalCertificate(caseId) {
+    const caseRecord = disposalCommitteeCases.find(item => Number(item.id) === Number(caseId));
+    if (!caseRecord || caseRecord.case_status !== 'Approved' || !caseRecord.certificate_no) {
+        showToast('A signed certificate is not available for this case.');
+        return;
+    }
+    const printSection = document.getElementById('disposalCertificatePrint');
+    printSection.innerHTML = `
+        <header class="text-center">
+            <h1 class="text-2xl font-bold">DEBRE MARKOS UNIVERSITY</h1>
+            <h2 class="text-lg font-semibold">PROPERTY ADMINISTRATION DIRECTORATE</h2>
+            <h3 class="mt-6 text-xl font-bold">OFFICIAL ASSET DISPOSAL CERTIFICATE</h3>
+        </header>
+        <p class="mt-6"><strong>Certificate No.:</strong> ${escapeHtml(caseRecord.certificate_no)}</p>
+        <p><strong>Issued:</strong> ${escapeHtml(caseRecord.certificate_issued_at || '')}</p>
+        <p><strong>Committee decision:</strong> Approved ${escapeHtml(caseRecord.disposition)} proposal</p>
+        <table><tbody>
+            <tr><th>Asset tag</th><td>${escapeHtml(caseRecord.asset_id)}</td></tr>
+            <tr><th>Description</th><td>${escapeHtml(caseRecord.asset_name)}</td></tr>
+            <tr><th>Category / serial</th><td>${escapeHtml(caseRecord.category)} / ${escapeHtml(caseRecord.serial || '')}</td></tr>
+            <tr><th>Condition</th><td>${escapeHtml(caseRecord.condition)}</td></tr>
+            <tr><th>Campus / department</th><td>${escapeHtml(caseRecord.campus)} / ${escapeHtml(caseRecord.department)}</td></tr>
+            <tr><th>Recorded value</th><td>${parseFloat(caseRecord.cost || 0).toLocaleString()} ETB</td></tr>
+            <tr><th>Inspection findings</th><td>${escapeHtml(caseRecord.inspection_findings || '')}</td></tr>
+            <tr><th>Committee notes</th><td>${escapeHtml(caseRecord.decision_notes || '')}</td></tr>
+        </tbody></table>
+        <p>This certificate records committee authorization for the stated disposal method. It is not evidence that the physical disposal has been completed.</p>
+        <div class="mt-12 border-t pt-4">
+            <p><strong>Committee member:</strong> ${escapeHtml(caseRecord.signer_name || '')}</p>
+            <p><strong>Recorded electronic acknowledgement:</strong> ${escapeHtml(caseRecord.decided_at || '')}</p>
+            <p class="mt-8">Committee member signature: ______________________________</p>
+            <p class="mt-8">Witness / authorized officer: ______________________________</p>
+        </div>`;
+    printContent('disposal-certificate');
 }
 
 // Render Inventory Physical Audit Checklist
@@ -1153,6 +1930,7 @@ function renderAuditSection() {
         document.getElementById('audit-expected').textContent = '0 Units';
         document.getElementById('audit-verified').textContent = '0 Units';
         document.getElementById('audit-missing').textContent = '0 Units';
+        document.getElementById('audit-pending').textContent = '0 Units';
         summary.textContent = physicalCountLoadError || 'No physical count session is active.';
         checklist.innerHTML = physicalCountLoadError
             ? '<p class="text-sm text-rose-600">Apply the physical count table definitions from schema.sql, then reload this page.</p>'
@@ -1169,13 +1947,13 @@ function renderAuditSection() {
         checklist.innerHTML += `
             <div class="p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
                 <div class="flex items-center gap-3">
-                    <input type="checkbox" data-asset-id="${escapeHtml(item.asset_id)}" onchange="updateAuditItem(this.dataset.assetId, this)" class="audit-check w-4 h-4 rounded text-indigo-600" ${isVerified ? 'checked' : ''}>
+                    <input type="checkbox" data-asset-id="${escapeHtml(item.asset_id)}" data-count-state="${item.is_verified === null ? 'pending' : item.is_verified ? 'true' : 'false'}" onchange="updateAuditItem(this.dataset.assetId, this)" class="audit-check w-4 h-4 rounded text-indigo-600" ${isVerified ? 'checked' : ''}>
                     <div>
                         <p class="font-bold">${escapeHtml(item.asset_name)} (${escapeHtml(item.asset_id)})</p>
                         <p class="text-slate-400">${escapeHtml(item.campus)} • ${escapeHtml(item.building)} (${escapeHtml(item.room)})</p>
                     </div>
                 </div>
-                <span class="audit-status px-2 py-0.5 rounded font-bold ${isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${isVerified ? 'Verified' : 'Not verified'}</span>
+                <span class="audit-status px-2 py-0.5 rounded font-bold ${isVerified ? 'bg-emerald-100 text-emerald-700' : item.is_verified === false ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}">${isVerified ? 'Verified' : item.is_verified === false ? 'Marked missing' : 'Pending verification'}</span>
             </div>
         `;
     });
@@ -1241,11 +2019,55 @@ async function startAuditScanner() {
     }
 }
 
+function extractAssetIdFromQrPayload(decodedText) {
+    const rawText = String(decodedText || '').trim();
+    if (!rawText) return '';
+
+    const normalized = rawText.replace(/\r/g, '');
+    const matchPatterns = [
+        /(?:asset\s*id|tag\s*id|id)\s*[:=]\s*([A-Za-z0-9][A-Za-z0-9-]*)/i,
+        /\b[A-Z]{2,}-[A-Z0-9-]+\b/i,
+        /\b[A-Z0-9]{3,}-\d+\b/i
+    ];
+
+    for (const pattern of matchPatterns) {
+        const match = normalized.match(pattern);
+        if (match) {
+            const value = (match[1] || match[0]).trim().toUpperCase();
+            if (value && !/^(MAIN|IT|N\/A|APPLIED|CAMPUS|CUSTODIAN|SERIAL|DEBRE|MARKOS|UNIVERSITY)$/i.test(value)) {
+                return value;
+            }
+        }
+    }
+
+    return rawText.toUpperCase();
+}
+
+function buildAssetQrPayload(item) {
+    const assetId = item?.id || 'Unknown asset';
+    const assetName = item?.name || 'Unknown item';
+    const campus = item?.campus || 'N/A';
+    const department = item?.department || 'N/A';
+    const custodian = item?.custodian || 'N/A';
+    const serial = item?.serial || 'N/A';
+    const tagStatus = item?.tagged_at ? `Applied ${item.tagged_at}` : 'Not yet applied';
+
+    return [
+        'Debre Markos University',
+        assetId,
+        assetName,
+        `Campus: ${campus} (${department})`,
+        `Custodian: ${custodian}`,
+        `Serial No: ${serial}`,
+        `Physical tag status: ${tagStatus}`
+    ].join('\n');
+}
+
 async function handleAuditQrScan(decodedText) {
     if (auditScanInProgress) return;
     auditScanInProgress = true;
     try {
-        const scannedAssetId = decodedText.trim().toUpperCase();
+        const scannedAssetId = extractAssetIdFromQrPayload(decodedText).trim().toUpperCase();
         const item = physicalCountSession?.items.find(
             entry => entry.asset_id.toUpperCase() === scannedAssetId
         );
@@ -1305,15 +2127,22 @@ function showAuditScanMessage(message, type) {
 function updateAuditCounts() {
     const checks = [...document.querySelectorAll('.audit-check')];
     const verified = checks.filter(check => check.checked).length;
+    const missing = checks.filter(check => check.dataset.countState === 'false').length;
+    const pending = checks.filter(check => check.dataset.countState === 'pending').length;
     document.getElementById('audit-verified').textContent = `${verified} Units`;
-    document.getElementById('audit-missing').textContent = `${checks.length - verified} Units`;
+    document.getElementById('audit-missing').textContent = `${missing} Units`;
+    document.getElementById('audit-pending').textContent = `${pending} Units`;
     checks.forEach(check => {
         const status = check.closest('div.p-3').querySelector('.audit-status');
-        status.textContent = check.checked ? 'Verified' : 'Not verified';
-        status.classList.toggle('bg-emerald-100', check.checked);
-        status.classList.toggle('text-emerald-700', check.checked);
-        status.classList.toggle('bg-rose-100', !check.checked);
-        status.classList.toggle('text-rose-700', !check.checked);
+        const verifiedNow = check.dataset.countState === 'true';
+        const missingNow = check.dataset.countState === 'false';
+        status.textContent = verifiedNow ? 'Verified' : missingNow ? 'Marked missing' : 'Pending verification';
+        status.classList.toggle('bg-emerald-100', verifiedNow);
+        status.classList.toggle('text-emerald-700', verifiedNow);
+        status.classList.toggle('bg-rose-100', missingNow);
+        status.classList.toggle('text-rose-700', missingNow);
+        status.classList.toggle('bg-amber-100', !verifiedNow && !missingNow);
+        status.classList.toggle('text-amber-700', !verifiedNow && !missingNow);
     });
 }
 
@@ -1331,8 +2160,17 @@ async function updateAuditItem(assetId, checkbox) {
             })
         });
         const item = physicalCountSession.items.find(entry => entry.asset_id === assetId);
+        checkbox.dataset.countState = checked ? 'true' : 'false';
         if (item) item.is_verified = checked;
         updateAuditCounts();
+        if (currentUser.role === 'internal_auditor'
+            && auditorData.latestPhysicalCount?.id === physicalCountSession.id) {
+            const items = physicalCountSession.items;
+            auditorData.latestPhysicalCount.verified_count = items.filter(entry => entry.is_verified === true).length;
+            auditorData.latestPhysicalCount.missing_count = items.filter(entry => entry.is_verified === false).length;
+            auditorData.latestPhysicalCount.pending_count = items.filter(entry => entry.is_verified === null).length;
+            renderAuditorWorkspace();
+        }
         return true;
     } catch (err) {
         checkbox.checked = !checked;
@@ -1359,6 +2197,18 @@ async function startAuditSession() {
         });
         physicalCountSession = result.data;
         renderAuditSection();
+        if (currentUser.role === 'internal_auditor') {
+            auditorData.latestPhysicalCount = {
+                id: physicalCountSession.id,
+                status: physicalCountSession.status,
+                started_at: physicalCountSession.started_at,
+                expected_count: physicalCountSession.items.length,
+                verified_count: 0,
+                missing_count: 0,
+                pending_count: physicalCountSession.items.length
+            };
+            renderAuditorWorkspace();
+        }
         showToast(`Physical count session #${physicalCountSession.id} started.`);
     } catch (err) {
         console.error('Failed to start physical count session:', err);
@@ -1384,25 +2234,58 @@ function populateAssetSelects() {
 
 // Modal View Asset Tag & QRCode Generation
 function viewTagModal(id) {
-    const item = assets.find(a => a.id === id);
+    const item = assets.find(a => a.id === id) || warehouseData.assets.find(a => a.id === id);
     if (!item) return;
 
+    currentTagAssetId = item.id;
     document.getElementById('tag-id').textContent = item.id;
     document.getElementById('tag-name').textContent = item.name;
     document.getElementById('tag-campus').textContent = `${item.campus} (${item.department})`;
     document.getElementById('tag-custodian').textContent = item.custodian;
     document.getElementById('tag-serial').textContent = item.serial;
+    document.getElementById('tag-status').textContent = item.tagged_at
+        ? `Applied ${item.tagged_at}`
+        : 'Not yet applied';
+    document.getElementById('markTagAppliedButton').classList.toggle(
+        'hidden',
+        !['system_admin', 'property_admin', 'storekeeper'].includes(currentUser.role)
+    );
 
-    // Render QR Code inside tag container
+    // Render QR Code inside tag container using the full asset details for readability when scanned.
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = '';
+    const qrPayload = buildAssetQrPayload(item);
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: item.id, width: 128, height: 128 });
+        new QRCode(qrContainer, { text: qrPayload, width: 128, height: 128 });
     } else {
-        qrContainer.textContent = item.id;
+        qrContainer.textContent = qrPayload;
     }
 
     openModal('viewTagModal');
+}
+
+async function markAssetTagApplied() {
+    if (!currentTagAssetId) {
+        showToast('Select an asset before marking its tag applied.');
+        return;
+    }
+    try {
+        const result = await requestJson('api/warehouse.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'mark-tagged', assetId: currentTagAssetId })
+        });
+        showToast(result.message);
+        await loadAllData();
+        const updatedAsset = assets.find(asset => asset.id === currentTagAssetId)
+            || warehouseData.assets.find(asset => asset.id === currentTagAssetId);
+        document.getElementById('tag-status').textContent = updatedAsset?.tagged_at
+            ? `Applied ${updatedAsset.tagged_at}`
+            : 'Applied';
+    } catch (err) {
+        console.error('Could not update the asset tag status:', err);
+        showToast(`Could not mark the asset tag applied: ${err.message}`);
+    }
 }
 
 // Modal View Gate Pass Voucher
@@ -1440,6 +2323,41 @@ async function flagDisposal(id) {
     } catch (err) {
         console.error('Failed to flag asset for disposal:', err);
         showToast(`Could not flag asset: ${err.message}`);
+    }
+}
+
+async function deleteAsset(id) {
+    const item = assets.find(asset => asset.id === id);
+    if (!item || !window.confirm(`Permanently delete "${item.name}" (${item.id})? Assets with linked records cannot be deleted.`)) {
+        return;
+    }
+
+    try {
+        const result = await requestJson('api/assets.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assetId: id })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Failed to delete asset:', err);
+        showToast(`Could not delete asset: ${err.message}`);
+    }
+}
+
+async function setAssetReviewFlag(id, flagged) {
+    try {
+        const result = await requestJson('api/assets.php', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'review-flag', assetId: id, flagged })
+        });
+        showToast(result.message);
+        await loadAllData();
+    } catch (err) {
+        console.error('Failed to update asset review flag:', err);
+        showToast(`Could not update review flag: ${err.message}`);
     }
 }
 

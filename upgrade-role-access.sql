@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(80) NOT NULL UNIQUE,
     full_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('system_admin', 'property_admin', 'department_head', 'technician', 'gate_security') NOT NULL,
+    role ENUM('system_admin', 'property_admin', 'procurement_officer', 'storekeeper', 'department_head', 'asset_custodian', 'internal_auditor', 'disposal_committee', 'technician', 'gate_security') NOT NULL,
     department VARCHAR(100) NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

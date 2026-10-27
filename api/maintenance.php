@@ -14,6 +14,16 @@ if ($method === 'GET') {
                  WHERE assets.department = ? ORDER BY maintenance.created_at DESC'
             );
             $stmt->execute([$user['department']]);
+        } elseif ($user['role'] === 'asset_custodian') {
+            $stmt = $pdo->prepare(
+                'SELECT maintenance.* FROM maintenance
+                 INNER JOIN assets ON assets.id = maintenance.asset_id
+                 WHERE (assets.custodian_user_id = ?
+                    OR (assets.custodian_user_id IS NULL AND assets.custodian = ?))
+                   AND assets.department = ?
+                 ORDER BY maintenance.created_at DESC'
+            );
+            $stmt->execute([$user['id'], $user['full_name'], $user['department']]);
         } else {
             api_response(['success' => false, 'error' => 'Your account cannot view maintenance tickets.'], 403);
         }
@@ -83,7 +93,7 @@ if ($method === 'PATCH') {
 api_require_method('POST');
 
 try {
-    $user = api_require_roles(['system_admin', 'property_admin', 'department_head', 'technician']);
+    $user = api_require_roles(['system_admin', 'property_admin', 'department_head', 'asset_custodian', 'technician']);
     $input = api_request_data();
     $assetId = api_required_string($input, 'assetId', 'Asset');
     $issue = api_required_string($input, 'issue', 'Issue description');
@@ -91,24 +101,29 @@ try {
     if (!in_array($priority, ['Low', 'Medium', 'Urgent'], true)) {
         throw new InvalidArgumentException('Priority is not valid.');
     }
-    $estimatedCost = api_cost($input, 'estimatedCost');
-    $technician = api_optional_string($input, 'technician', 'Internal Workshop') ?: 'Internal Workshop';
-    $spareParts = api_optional_string($input, 'spareParts');
+    $estimatedCost = $user['role'] === 'asset_custodian' ? 0.0 : api_cost($input, 'estimatedCost');
+    $technician = $user['role'] === 'asset_custodian'
+        ? 'Internal Workshop'
+        : (api_optional_string($input, 'technician', 'Internal Workshop') ?: 'Internal Workshop');
+    $spareParts = $user['role'] === 'asset_custodian' ? '' : api_optional_string($input, 'spareParts');
     $reportedBy = api_optional_string($input, 'reportedBy', 'Department Head / Dean') ?: 'Department Head / Dean';
 
     $pdo->beginTransaction();
-    $assetStmt = $pdo->prepare('SELECT id, name FROM assets WHERE id = ? FOR UPDATE');
+    $assetStmt = $pdo->prepare('SELECT id, name, custodian, custodian_user_id, department FROM assets WHERE id = ? FOR UPDATE');
     $assetStmt->execute([$assetId]);
     $asset = $assetStmt->fetch();
     if (!$asset) {
         throw new InvalidArgumentException('The selected asset does not exist.');
     }
     if ($user['role'] === 'department_head') {
-        $departmentStmt = $pdo->prepare('SELECT department FROM assets WHERE id = ?');
-        $departmentStmt->execute([$assetId]);
-        if ($departmentStmt->fetchColumn() !== $user['department']) {
+        if ($asset['department'] !== $user['department']) {
             api_response(['success' => false, 'error' => 'Department Heads may submit tickets only for their own department assets.'], 403);
         }
+    } elseif ($user['role'] === 'asset_custodian'
+        && (($asset['custodian_user_id'] != $user['id']
+                && !($asset['custodian_user_id'] === null && $asset['custodian'] === $user['full_name']))
+            || $asset['department'] !== $user['department'])) {
+        api_response(['success' => false, 'error' => 'You may submit tickets only for assets assigned to your account.'], 403);
     }
 
     $id = 'MNT-' . date('Y') . '-' . api_next_id($pdo, 'maintenance');

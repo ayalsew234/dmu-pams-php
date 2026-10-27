@@ -98,6 +98,15 @@
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600 dark:text-amber-400 dark:border-amber-400">
                 Dashboard
             </button>
+            <button onclick="switchTab('procurement')" id="nav-procurement" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                Procurement & Receiving
+            </button>
+            <button onclick="switchTab('warehouse')" id="nav-warehouse" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                Warehouse & Stock Issues
+            </button>
+            <button onclick="switchTab('my-assets')" id="nav-my-assets" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                My Assets
+            </button>
             <button onclick="switchTab('registry')" id="nav-registry" class="nav-btn flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 Asset Registry
             </button>
@@ -110,8 +119,14 @@
             <button onclick="switchTab('disposal')" id="nav-disposal" class="nav-btn flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 Depreciation & Disposal
             </button>
+            <button onclick="switchTab('disposal-committee')" id="nav-disposal-committee" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                Disposal Committee
+            </button>
             <button onclick="switchTab('audit')" id="nav-audit" class="nav-btn flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 Inventory Audit
+            </button>
+            <button onclick="switchTab('compliance')" id="nav-compliance" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                Finance & Compliance
             </button>
             <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 DMU Reports Generator
@@ -137,7 +152,7 @@
             </div>
             <div class="text-center">
                 <div class="mx-auto w-12 h-12 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center">DMU</div>
-                <h2 id="authHeading" class="text-xl font-bold mt-3">Sign in to PAMS</h2>
+                <h2 id="authHeading" class="text-xl font-bold mt-3">DEBRE MARKOS UNIVERSITY</h2>
                 <p id="authDescription" class="text-sm text-slate-500 mt-1">Use your assigned DMU account.</p>
             </div>
             <form id="authForm" onsubmit="submitAuthentication(event)" class="space-y-3">
@@ -215,11 +230,14 @@
             <div id="roleOverview" class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-5 space-y-4">
                 <div>
                     <h3 class="font-bold">DMU Central Management — Role Responsibilities</h3>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">Workflow guidance only. User accounts, authentication, and role-enforced permissions are not configured in this version.</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">Role-specific modules are protected by both the application interface and API permissions.</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-                    <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>System Administrator</strong><p class="text-slate-500 mt-1">User and role administration, security, audit logs, configuration, and backups — deferred until authentication is implemented.</p></div>
+                    <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>System Administrator</strong><p class="text-slate-500 mt-1">User and role administration, security, and system audit logs; infrastructure configuration and backups are handled operationally.</p></div>
                     <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Property Admin / Stock Officer</strong><p class="text-slate-500 mt-1">Global asset register, transfer decisions, annual counts, depreciation, and disposal recommendations.</p></div>
+                    <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Internal Auditor & Finance Officer</strong><p class="text-slate-500 mt-1">Independently verify inventory, review asset valuation and invoice variances, inspect audit events, and record compliance findings.</p></div>
+                    <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Procurement & Purchasing Officer</strong><p class="text-slate-500 mt-1">Register suppliers, create purchase orders, record goods received, match invoices, and register received assets.</p></div>
+                    <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Storekeeper / Warehouse Custodian</strong><p class="text-slate-500 mt-1">Allocate temporary storage, issue available stock with SIV records, and print/apply physical QR asset tags.</p></div>
                     <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Department Head / Dean</strong><p class="text-slate-500 mt-1">Department inventory, equipment requests, transfer requests, handovers, and maintenance submissions.</p></div>
                     <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Maintenance / IT Technician</strong><p class="text-slate-500 mt-1">Work-order progress, diagnosis, repair costs, parts notes, and disposal recommendations.</p></div>
                     <div class="rounded-lg bg-white/80 dark:bg-slate-900/70 p-3"><strong>Gate Security Officer</strong><p class="text-slate-500 mt-1">Gate-pass QR verification, driver capture, and transit check-out/check-in.</p></div>
@@ -242,6 +260,161 @@
                         <canvas id="conditionChart"></canvas>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="tab-procurement" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold">Procurement, Purchase Orders & Goods Receiving</h2>
+                <p class="text-sm text-slate-500">Register suppliers, track purchase orders, receive goods, match supplier invoices, and add received units to the asset register.</p>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <form onsubmit="registerSupplier(event)" class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="font-bold">Register Supplier</h3>
+                    <input name="name" required maxlength="255" placeholder="Supplier / vendor name" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input name="contactName" placeholder="Contact person" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="email" type="email" placeholder="Email" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="phone" placeholder="Phone" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="taxNumber" placeholder="Tax / TIN number" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    </div>
+                    <input name="address" placeholder="Supplier address" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <button type="submit" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Save Supplier</button>
+                </form>
+
+                <form onsubmit="createPurchaseOrder(event)" class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="font-bold">Create Purchase Order</h3>
+                    <select id="procurementVendorSelect" name="vendorId" required class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="">Register/select supplier</option>
+                    </select>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input name="itemName" required placeholder="Asset / item description" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="category" required placeholder="Category" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="quantity" required type="number" min="1" step="1" placeholder="Quantity" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="unitCost" required type="number" min="0" step="0.01" placeholder="Unit cost (ETB)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="campus" required placeholder="Receiving campus" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="department" required placeholder="Receiving department" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="building" placeholder="Building (optional)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <input name="room" placeholder="Room (optional)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <label class="text-xs text-slate-500">Order date<input name="orderDate" type="date" class="mt-1 w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></label>
+                        <label class="text-xs text-slate-500">Expected delivery<input name="expectedDate" type="date" class="mt-1 w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></label>
+                    </div>
+                    <textarea name="notes" rows="2" placeholder="Purchase order notes" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></textarea>
+                    <button type="submit" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Create Purchase Order</button>
+                </form>
+            </div>
+
+            <form onsubmit="recordGoodsReceipt(event)" class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                <h3 class="font-bold">Record Goods Receiving Note & Invoice</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <select id="receiptPurchaseOrderSelect" name="purchaseOrderId" required onchange="updateReceiptQuantityLimit()" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="">Select an outstanding order</option>
+                    </select>
+                    <input name="quantityReceived" required type="number" min="1" step="1" placeholder="Quantity received" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <label class="text-xs text-slate-500">Received date<input name="receivedDate" type="date" class="mt-1 w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></label>
+                    <input name="invoiceNumber" placeholder="Supplier invoice number (optional)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <input name="invoiceAmount" type="number" min="0" step="0.01" placeholder="Invoice amount (ETB)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <input name="notes" placeholder="Receiving / invoice notes" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                </div>
+                <button type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Receive Goods & Register Assets</button>
+            </form>
+
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Purchase Orders</h3>
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">PO</th><th class="p-3">Supplier</th><th class="p-3">Item</th><th class="p-3">Qty received / ordered</th><th class="p-3">Unit cost (ETB)</th><th class="p-3">Status</th></tr></thead>
+                    <tbody id="purchaseOrdersTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Goods Receiving Notes & Invoice Matching</h3>
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">GRN</th><th class="p-3">PO / Supplier</th><th class="p-3">Item / Qty</th><th class="p-3">Invoice</th><th class="p-3">Amount (ETB)</th><th class="p-3">Match status</th><th class="p-3">Invoice action</th></tr></thead>
+                    <tbody id="goodsReceiptsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-warehouse" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold">Warehouse & Physical Stock Control</h2>
+                <p class="text-sm text-slate-500">Allocate buffer storage, issue stock with a Stock Issue Voucher (SIV), and print QR asset tags for physical labeling.</p>
+            </div>
+
+            <form onsubmit="issueSelectedStock(event)" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <select name="recipientUserId" id="warehouseRecipientUser" onchange="setWarehouseRecipient(this)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <option value="">Optional: link to a staff account</option>
+                </select>
+                <input name="recipientName" required placeholder="Receiving staff member" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                <input name="recipientDepartment" required placeholder="Receiving department" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                <input name="purpose" placeholder="Issue purpose / reference" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                <button type="submit" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Issue Selected Stock & Create SIV</button>
+            </form>
+            <p class="-mt-4 text-xs text-slate-500">Linking a staff account assigns the selected assets to that account's personal inventory. Manual recipients remain available for non-account holders.</p>
+
+            <form onsubmit="allocateSelectedStock(event)" class="flex flex-col sm:flex-row gap-3 p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <input name="storageLocation" required maxlength="255" placeholder="Temporary storage / buffer location" class="min-w-0 flex-1 p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                <button type="submit" class="bg-amber-500 text-slate-950 px-4 py-2 rounded-lg text-sm font-medium">Allocate Selected to Temporary Storage</button>
+                <button type="button" onclick="releaseSelectedStock()" class="bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium">Release to Available Stock</button>
+            </form>
+            <p class="text-xs text-slate-500">Select assets below to issue, allocate, or release them. QR tags can be printed per asset for physical barcode labeling.</p>
+
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3"><input id="warehouseSelectAll" type="checkbox" aria-label="Select all available stock" onchange="toggleWarehouseSelection(this)"></th><th class="p-3">Asset / Tag ID</th><th class="p-3">Location</th><th class="p-3">Custodian</th><th class="p-3">Stock status / storage</th><th class="p-3">Condition</th><th class="p-3">Physical tag</th></tr></thead>
+                    <tbody id="warehouseAssetsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Stock Issue Voucher History</h3>
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">SIV Number</th><th class="p-3">Issue date</th><th class="p-3">Recipient / department</th><th class="p-3">Items</th><th class="p-3">Purpose</th><th class="p-3">Issued by</th><th class="p-3">Action</th></tr></thead>
+                    <tbody id="stockIssuesTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-my-assets" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold">My Assigned Assets</h2>
+                <p class="text-sm text-slate-500">Review your personal inventory, electronically acknowledge received assignments, report loss, damage, or theft, and request maintenance directly.</p>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Asset Tag / Name</th><th class="p-3">Location</th><th class="p-3">Condition</th><th class="p-3">Assignment Acknowledgement</th><th class="p-3">Action</th></tr></thead>
+                    <tbody id="custodianAssetsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <form onsubmit="submitCustodianIncident(event)" class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="font-bold">Report Loss, Damage, or Theft</h3>
+                    <select id="incidentAssetId" name="assetId" required class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="">Select your assigned asset</option>
+                    </select>
+                    <select name="incidentType" required class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="">Select incident type</option><option value="Loss">Loss</option><option value="Damage">Damage</option><option value="Theft">Theft</option>
+                    </select>
+                    <textarea name="description" required maxlength="5000" rows="4" placeholder="Describe what happened, when, and where." class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></textarea>
+                    <button type="submit" class="bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Submit Incident Report</button>
+                </form>
+                <div class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="font-bold">My Incident Reports</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-2">Reported</th><th class="p-2">Asset</th><th class="p-2">Type / Status</th><th class="p-2">Details</th></tr></thead>
+                            <tbody id="custodianIncidentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <h3 class="text-lg font-bold">My Maintenance Requests</h3>
+                    <p class="text-xs text-slate-500">Create a ticket for an asset assigned to you and follow its repair status.</p>
+                </div>
+                <button id="custodianMaintenanceButton" onclick="openModal('maintenanceModal')" class="bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">+ Create Maintenance Ticket</button>
+                <div id="custodianMaintenanceGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </section>
 
@@ -371,6 +544,33 @@
                 <h2 class="text-2xl font-bold">Straight-Line Depreciation & Public Disposal Workflow</h2>
                 <p class="text-sm text-slate-500">Automated Ethiopian Public Higher Education depreciation calculation (5-Year Straight Line) & Board disposal recommendations.</p>
             </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase text-slate-500">Acquisition Value</p>
+                    <p id="disposal-total-cost" class="mt-2 text-xl font-bold">0 ETB</p>
+                </div>
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase text-slate-500">Accumulated Depreciation</p>
+                    <p id="disposal-accumulated" class="mt-2 text-xl font-bold text-amber-600">0 ETB</p>
+                </div>
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase text-slate-500">Net Book Value</p>
+                    <p id="disposal-net-book-value" class="mt-2 text-xl font-bold text-emerald-600">0 ETB</p>
+                </div>
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase text-slate-500">Awaiting Committee</p>
+                    <p id="disposal-awaiting-count" class="mt-2 text-xl font-bold text-rose-600">0</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input id="disposalSearch" type="search" oninput="renderDisposalTable()" placeholder="Search asset tag, name, or department..." class="w-full sm:flex-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <select id="disposalFilter" onchange="renderDisposalTable()" class="w-full sm:w-64 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                    <option value="all">All assets</option>
+                    <option value="recommended">Recommended for disposal</option>
+                    <option value="awaiting">Awaiting committee</option>
+                    <option value="rejected">Rejected by committee</option>
+                </select>
+            </div>
             <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
@@ -385,6 +585,27 @@
                         </tr>
                     </thead>
                     <tbody id="disposalTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-disposal-committee" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold">Asset Disposal Committee Review</h2>
+                <p class="text-sm text-slate-500">Inspect submitted equipment, record a Scrap, Auction, or Donation decision, and issue a certificate for approved cases. Approval does not record that physical disposal has been completed.</p>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b bg-slate-100 dark:bg-slate-900 font-semibold uppercase">
+                            <th class="p-3.5">Asset</th>
+                            <th class="p-3.5">Condition & Location</th>
+                            <th class="p-3.5">Case Status</th>
+                            <th class="p-3.5">Inspection</th>
+                            <th class="p-3.5">Committee Review</th>
+                        </tr>
+                    </thead>
+                    <tbody id="disposalCommitteeTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
                 </table>
             </div>
         </section>
@@ -411,7 +632,7 @@
                 </div>
                 <p id="auditScanMessage" class="hidden text-sm" role="status" aria-live="polite"></p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
                 <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
                     <span class="text-xs text-slate-400 font-semibold uppercase">Expected Registered Items</span>
                     <p id="audit-expected" class="text-2xl font-bold mt-1">0 Units</p>
@@ -421,14 +642,79 @@
                     <p id="audit-verified" class="text-2xl font-bold text-emerald-600 mt-1">0 Units</p>
                 </div>
                 <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
-                    <span class="text-xs text-rose-500 font-semibold uppercase">Discrepancy / Unaccounted</span>
+                    <span class="text-xs text-rose-500 font-semibold uppercase">Marked Missing</span>
                     <p id="audit-missing" class="text-2xl font-bold text-rose-500 mt-1">0 Units</p>
+                </div>
+                <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <span class="text-xs text-amber-500 font-semibold uppercase">Not Yet Verified</span>
+                    <p id="audit-pending" class="text-2xl font-bold text-amber-500 mt-1">0 Units</p>
                 </div>
             </div>
             <div class="p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
                 <h3 class="font-bold text-base">Audit Checklist & Location Log</h3>
                 <div id="auditChecklist" class="space-y-2"></div>
             </div>
+        </section>
+
+        <section id="tab-compliance" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold">Financial Governance & Compliance Inspections</h2>
+                <p class="text-sm text-slate-500">Read-only reconciliation of the asset register and procurement invoices, with open incident review and a durable log of inspection findings.</p>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"><span class="text-xs uppercase text-slate-500">Registered Assets</span><p id="auditor-asset-count" class="text-xl font-bold mt-1">0</p></div>
+                <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"><span class="text-xs uppercase text-slate-500">Asset Register Value</span><p id="auditor-asset-value" class="text-xl font-bold mt-1">0 ETB</p></div>
+                <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"><span class="text-xs uppercase text-slate-500">Invoice Discrepancies</span><p id="auditor-invoice-count" class="text-xl font-bold mt-1">0</p></div>
+                <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"><span class="text-xs uppercase text-slate-500">Open Asset Incidents</span><p id="auditor-incident-count" class="text-xl font-bold mt-1">0</p></div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4">
+                <div><h3 class="font-bold">Physical Count Reconciliation</h3><p id="auditor-count-summary" class="text-sm text-slate-500">No count evidence available.</p></div>
+                <button onclick="switchTab('audit')" class="rounded bg-indigo-900 px-4 py-2 text-sm text-white">Open Audit Mode</button>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                    <h3 class="p-4 font-bold">Asset Valuation by Campus</h3>
+                    <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Campus</th><th class="p-3">Asset count</th><th class="p-3">Register value (ETB)</th></tr></thead><tbody id="auditorCampusValuationBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+                </div>
+                <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                    <h3 class="p-4 font-bold">Asset Valuation by Department</h3>
+                    <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Department</th><th class="p-3">Asset count</th><th class="p-3">Register value (ETB)</th></tr></thead><tbody id="auditorDepartmentValuationBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+                </div>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Goods Receipt to Asset Ledger Reconciliation</h3>
+                <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">GRN / PO</th><th class="p-3">Supplier / Item</th><th class="p-3">Received</th><th class="p-3">Asset records</th><th class="p-3">Quantity variance</th><th class="p-3">Value variance (ETB)</th></tr></thead><tbody id="auditorReceiptReconciliationBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Procurement Invoice Variances</h3>
+                <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">GRN / PO</th><th class="p-3">Supplier / Item</th><th class="p-3">Invoice</th><th class="p-3">Variance (ETB)</th><th class="p-3">Received</th></tr></thead><tbody id="auditorInvoiceVarianceBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+            </div>
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 class="p-4 font-bold">Unresolved Asset Incidents</h3>
+                <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Date / Reporter</th><th class="p-3">Asset</th><th class="p-3">Incident</th><th class="p-3">Description</th><th class="p-3">Status</th></tr></thead><tbody id="auditorIncidentsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <form onsubmit="createComplianceInspection(event)" class="xl:col-span-1 p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="font-bold">Record Inspection Finding</h3>
+                    <input name="title" required maxlength="255" placeholder="Finding title" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <select name="inspectionType" required class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="Anti-Fraud">Anti-Fraud</option><option value="Asset Compliance">Asset Compliance</option><option value="Financial Review">Financial Review</option><option value="Other">Other</option>
+                    </select>
+                    <select name="riskLevel" required class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="Low">Low risk</option><option value="Medium" selected>Medium risk</option><option value="High">High risk</option>
+                    </select>
+                    <select name="assetId" id="auditorInspectionAsset" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                        <option value="">Optional: related asset</option>
+                    </select>
+                    <textarea name="findings" required maxlength="10000" rows="5" placeholder="Evidence, control issue, and recommended follow-up" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></textarea>
+                    <button type="submit" class="rounded bg-indigo-900 px-4 py-2 text-sm font-medium text-white">Save Inspection</button>
+                </form>
+                <div class="xl:col-span-2 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
+                    <h3 class="p-4 font-bold">Compliance Inspection Register</h3>
+                    <table class="w-full text-left text-xs"><thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Date / Inspector</th><th class="p-3">Type / Risk</th><th class="p-3">Finding</th><th class="p-3">Related asset</th><th class="p-3">Status</th><th class="p-3">Update</th></tr></thead><tbody id="auditorInspectionsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table>
+                </div>
+            </div>
+            <div class="flex justify-end"><button onclick="switchTab('reports'); printMasterLedger()" class="rounded bg-slate-700 px-4 py-2 text-sm text-white">Print Full Asset Ledger</button></div>
         </section>
 
         <!-- TAB 7: REPORTS -->
@@ -462,12 +748,17 @@
                 <input name="password" required type="password" minlength="12" placeholder="Temporary password (12+ chars)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                 <select name="role" required onchange="toggleUserDepartmentField(this)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                     <option value="property_admin">Property Admin</option>
+                    <option value="procurement_officer">Procurement & Purchasing Officer</option>
+                    <option value="storekeeper">Storekeeper / Warehouse Custodian</option>
                     <option value="department_head">Department Head / Dean</option>
+                    <option value="asset_custodian">End-User / Faculty / Staff (Asset Custodian)</option>
+                    <option value="internal_auditor">Internal Auditor & Finance Officer</option>
+                    <option value="disposal_committee">Asset Disposal Committee Member</option>
                     <option value="technician">Maintenance / IT Technician</option>
                     <option value="gate_security">Gate Security Officer</option>
                     <option value="system_admin">System Administrator</option>
                 </select>
-                <input name="department" placeholder="Department (for Dept Head)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                <input name="department" placeholder="Department (required for Dept Head / Staff)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                 <button type="submit" class="md:col-span-2 xl:col-span-5 bg-indigo-900 text-white px-4 py-2 rounded-lg font-semibold">Create Account</button>
             </form>
             <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
@@ -530,6 +821,7 @@
         <p class="clearance-signatures">Property Officer: __________________________ &nbsp; Signature: ______________ &nbsp; Date: __________</p>
         <p>Department Head: ____________________________ &nbsp; Signature: ______________ &nbsp; Date: __________</p>
     </section>
+    <section id="disposalCertificatePrint" class="hidden" aria-label="Official asset disposal certificate"></section>
 
     <!-- MODAL 1: ADD NEW ASSET -->
     <div id="addAssetModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -661,10 +953,10 @@
                     <label class="block font-medium mb-1">Issue / Fault Description *</label>
                     <textarea required id="maint-issue" rows="3" placeholder="Describe damage or malfunction..." class="w-full p-2.5 rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-700"></textarea>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div id="maintenanceAdminFields" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2">
-                        <label class="block font-medium mb-1">Reported By (Department Head / Dean)</label>
-                        <input id="maint-reportedBy" type="text" placeholder="Name of the reporting department head or dean" class="w-full p-2.5 rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                        <label class="block font-medium mb-1">Reporter</label>
+                        <input id="maint-reportedBy" type="text" placeholder="Name of the reporting staff member" class="w-full p-2.5 rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-700">
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Technician / Garage</label>
@@ -690,9 +982,14 @@
     <!-- MODAL 4: VIEW TAG & QR SHEET -->
     <div id="viewTagModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="w-full max-w-lg rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-slate-800">
-                <h3 class="text-lg font-bold">DMU Property Tag Sheet</h3>
-                <button onclick="closeModal('viewTagModal')" class="text-slate-400">✕</button>
+            <div class="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-slate-800 gap-3">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="closeModal('viewTagModal')" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:underline">
+                        <span aria-hidden="true">←</span>
+                        Back to Warehouse & Stock Issues
+                    </button>
+                </div>
+                <button onclick="closeModal('viewTagModal')" class="text-slate-400" aria-label="Close tag view">✕</button>
             </div>
             <div id="tagBox" class="p-4 rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/30 dark:bg-slate-800/40 space-y-3">
                 <div class="flex justify-between items-start">
@@ -707,9 +1004,44 @@
                     <p><span class="text-slate-400">Campus:</span> <span id="tag-campus"></span></p>
                     <p><span class="text-slate-400">Custodian:</span> <span id="tag-custodian"></span></p>
                     <p><span class="text-slate-400">Serial No:</span> <span id="tag-serial"></span></p>
+                    <p><span class="text-slate-400">Physical tag status:</span> <span id="tag-status"></span></p>
                 </div>
             </div>
-            <button onclick="printContent('tag')" class="w-full bg-indigo-900 text-white py-2 rounded-lg text-xs font-semibold">Print Asset Label Tag</button>
+            <div class="flex gap-2">
+                <button onclick="printContent('tag')" class="flex-1 bg-indigo-900 text-white py-2 rounded-lg text-xs font-semibold">Print Asset Label Tag</button>
+                <button id="markTagAppliedButton" onclick="markAssetTagApplied()" class="flex-1 bg-emerald-700 text-white py-2 rounded-lg text-xs font-semibold">Mark Tag Applied</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sivModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl bg-white text-slate-900 rounded-xl p-8 shadow-2xl space-y-5 border-4 border-indigo-950">
+            <div id="sivPrintBox" class="space-y-5">
+                <div class="text-center border-b-2 border-indigo-950 pb-4">
+                    <h2 class="text-lg font-bold text-indigo-950">DEBRE MARKOS UNIVERSITY</h2>
+                    <p class="text-xs font-semibold text-slate-600">PROPERTY ADMINISTRATION DIRECTORATE / STORE</p>
+                    <p class="text-xs font-mono mt-1 underline">STOCK ISSUE VOUCHER</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <p>Voucher No: <strong id="siv-number"></strong></p>
+                    <p>Issue date: <strong id="siv-date"></strong></p>
+                    <p>Recipient: <strong id="siv-recipient"></strong></p>
+                    <p>Department: <strong id="siv-department"></strong></p>
+                    <p class="col-span-2">Purpose / reference: <strong id="siv-purpose"></strong></p>
+                </div>
+                <table class="w-full border-collapse text-xs">
+                    <thead><tr><th class="border p-2">#</th><th class="border p-2">Asset tag</th><th class="border p-2">Description</th><th class="border p-2">Serial</th><th class="border p-2">Condition</th></tr></thead>
+                    <tbody id="siv-items"></tbody>
+                </table>
+                <div class="grid grid-cols-2 gap-8 pt-8 text-xs">
+                    <p class="border-t border-slate-700 pt-2">Issued by / Storekeeper signature</p>
+                    <p class="border-t border-slate-700 pt-2">Received by / Recipient signature</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="printContent('siv')" class="flex-1 bg-indigo-950 text-white py-2 rounded-lg text-xs font-bold">Print Official SIV</button>
+                <button onclick="closeModal('sivModal')" class="px-4 py-2 bg-slate-200 rounded-lg text-xs font-bold">Close</button>
+            </div>
         </div>
     </div>
 
