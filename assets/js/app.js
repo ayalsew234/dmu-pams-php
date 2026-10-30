@@ -29,6 +29,10 @@ let auditScanInProgress = false;
 let campusChartInstance = null;
 let conditionChartInstance = null;
 
+// Language system — translations loaded from assets/js/lang/*.js
+window.PAMS_LANG = window.PAMS_LANG || {};
+
+// Kept for backward-compat reverse lookup (am <-> en)
 const amharicTranslations = {
     'Language / ቋንቋ': 'ቋንቋ',
     'Select language': 'ቋንቋ ይምረጡ',
@@ -167,60 +171,74 @@ const amharicTranslations = {
     'Property Asset & Management System': 'የንብረት አስተዳደር ስርዓት'
 };
 
+// Build reverse map: translated value -> English (for switching back to English)
 const englishTranslations = Object.fromEntries(
-    Object.entries(amharicTranslations).map(([english, amharic]) => [amharic, english])
+    Object.entries(amharicTranslations).map(([en, am]) => [am, en])
 );
+
+// Supported language codes
+const SUPPORTED_LANGS = ['en', 'am', 'om', 'gz', 'so', 'ti', 'zh', 'es', 'hi', 'ar', 'bn', 'pt', 'ru', 'ja', 'fr'];
 
 let selectedLanguage = 'en';
 
 function translateText(value) {
-    if (selectedLanguage === 'am') return amharicTranslations[value] || value;
-    return englishTranslations[value] || value;
+    if (selectedLanguage === 'en') return englishTranslations[value] || value;
+    const map = window.PAMS_LANG[selectedLanguage];
+    if (map && map[value]) return map[value];
+    // fallback: try reverse-map back to English key then translate
+    const enKey = englishTranslations[value] || value;
+    return (map && map[enKey]) || value;
 }
+
+const originalTextNodes = new WeakMap();
+const originalAttributes = new WeakMap();
 
 function translateElement(element) {
     if (element.nodeType === Node.TEXT_NODE) {
-        const trimmedText = element.nodeValue.trim();
-        const translatedText = translateText(trimmedText);
-        if (trimmedText && translatedText !== trimmedText) {
-            const start = element.nodeValue.indexOf(trimmedText);
-            element.nodeValue = `${element.nodeValue.slice(0, start)}${translatedText}${element.nodeValue.slice(start + trimmedText.length)}`;
-        }
+        if (!originalTextNodes.has(element)) originalTextNodes.set(element, element.nodeValue);
+        const original = originalTextNodes.get(element);
+        const trimmed = original.trim();
+        if (!trimmed) return;
+        const translated = translateText(trimmed);
+        const start = original.indexOf(trimmed);
+        element.nodeValue = `${original.slice(0, start)}${translated}${original.slice(start + trimmed.length)}`;
         return;
     }
-
     if (element.nodeType !== Node.ELEMENT_NODE) return;
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
     textNodes.forEach(translateElement);
-
     const elements = [element, ...element.querySelectorAll('*')];
-    elements.forEach(child => ['aria-label', 'placeholder', 'title'].forEach(attribute => {
-        const value = child.getAttribute(attribute);
-        if (value) child.setAttribute(attribute, translateText(value));
+    elements.forEach(child => ['aria-label', 'placeholder', 'title'].forEach(attr => {
+        const current = child.getAttribute(attr);
+        if (current === null) return;
+        let originals = originalAttributes.get(child);
+        if (!originals) {
+            originals = new Map();
+            originalAttributes.set(child, originals);
+        }
+        if (!originals.has(attr)) originals.set(attr, current);
+        child.setAttribute(attr, translateText(originals.get(attr)));
     }));
 }
-
 function setLanguage(language) {
-    selectedLanguage = language === 'am' ? 'am' : 'en';
+    selectedLanguage = SUPPORTED_LANGS.includes(language) ? language : 'en';
     document.documentElement.lang = selectedLanguage;
+    document.documentElement.dir = selectedLanguage === 'ar' ? 'rtl' : 'ltr';
     localStorage.setItem('pams-language', selectedLanguage);
-    document.querySelectorAll('.language-selector').forEach(selector => {
-        selector.value = selectedLanguage;
-    });
+    document.querySelectorAll('.language-selector').forEach(sel => { sel.value = selectedLanguage; });
     translateElement(document.body);
 }
 
 function initializeLanguage() {
-    const savedLanguage = localStorage.getItem('pams-language');
-    selectedLanguage = savedLanguage === 'am' ? 'am' : 'en';
-    document.querySelectorAll('.language-selector').forEach(selector => {
-        selector.value = selectedLanguage;
-        selector.addEventListener('change', () => setLanguage(selector.value));
+    const saved = localStorage.getItem('pams-language');
+    selectedLanguage = SUPPORTED_LANGS.includes(saved) ? saved : 'en';
+    document.querySelectorAll('.language-selector').forEach(sel => {
+        sel.value = selectedLanguage;
+        sel.addEventListener('change', () => setLanguage(sel.value));
     });
     setLanguage(selectedLanguage);
-
     const observer = new MutationObserver(records => {
         records.forEach(record => record.addedNodes.forEach(translateElement));
     });

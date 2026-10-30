@@ -75,6 +75,11 @@
                     <select class="language-selector rounded-md border border-indigo-700 bg-indigo-900 px-2 py-1 text-white" aria-label="Select language">
                         <option value="en">English</option>
                         <option value="am">አማርኛ</option>
+                        <option value="or">AFAN OROMO</option>
+                        <option value="so">SOMALI</option>
+                        <option value="ti">ትግርኛ</option>
+                        <option value="gz">ግዕዝ</option>
+                    
                     </select>
                 </label>
 
