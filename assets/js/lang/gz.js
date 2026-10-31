@@ -83,5 +83,7 @@ window.PAMS_LANG.gz = {
     'All Categories': 'ዓይነታት ኵሎሙ',
     'All Conditions': 'ሁናቴያት ኵሎሙ',
     'Print Full Master Ledger': 'ዝርዝር ዋና ፍጹም ሕተሙ',
-    'Print Clearance Form': 'ቅጺ ፍቓድ ሕተሙ'
+    'Print Clearance Form': 'ቅጺ ፍቓድ ሕተሙ',
+    'Procurement & Receiving': 'ግዢ ወ ተቀባሊት',
+    'Warehouse & Stock Issues': 'ቤተ ዕቃ ወ ምውጻእ ንብረት'
 };

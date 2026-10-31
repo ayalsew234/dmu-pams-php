@@ -162,6 +162,26 @@ try {
         if (!$quantity || $quantity < 1 || $quantity > 1000) {
             throw new InvalidArgumentException('Received quantity must be a whole number between 1 and 1,000.');
         }
+        $serialInput = $input['serialNumbers'] ?? '';
+        if (!is_string($serialInput)) {
+            throw new InvalidArgumentException('Serial numbers must be provided as text.');
+        }
+        $serialNumbers = [];
+        if (trim($serialInput) !== '') {
+            $serialNumbers = array_map('trim', preg_split('/[,\r\n]+/', trim($serialInput)) ?: []);
+            if (count($serialNumbers) !== $quantity || in_array('', $serialNumbers, true)) {
+                throw new InvalidArgumentException('Enter exactly one serial number for each received item, separated by commas or new lines.');
+            }
+            foreach ($serialNumbers as $serialNumber) {
+                if (strlen($serialNumber) > 100) {
+                    throw new InvalidArgumentException('Each serial number must be 100 characters or fewer.');
+                }
+            }
+            $normalizedSerials = array_map('strtolower', $serialNumbers);
+            if (count(array_unique($normalizedSerials)) !== count($normalizedSerials)) {
+                throw new InvalidArgumentException('Serial numbers in the same receipt must be unique.');
+            }
+        }
         $invoiceNumber = api_optional_string($input, 'invoiceNumber');
         $hasInvoiceAmount = isset($input['invoiceAmount']) && $input['invoiceAmount'] !== '';
         if (($invoiceNumber !== '') !== $hasInvoiceAmount) {
@@ -219,7 +239,7 @@ try {
             $assetInsert = $pdo->prepare(
                 "INSERT INTO assets
                         (id, name, category, campus, department, building, room, custodian, cost, acq_date, `condition`, status, serial, purchase_order_id, goods_receipt_note_id, stock_status)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, 'Unassigned', ?, ?, 'New', 'Active', 'N/A', ?, ?, 'In Stock')"
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 'Unassigned', ?, ?, 'New', 'Active', ?, ?, ?, 'In Stock')"
             );
             $assetInsert->execute([
                 $assetId,
@@ -231,6 +251,7 @@ try {
                 $order['room'],
                 $order['unit_cost'],
                 $receivedDate,
+                $serialNumbers[$unit] ?? 'N/A',
                 $purchaseOrderId,
                 $receiptId,
             ]);

@@ -81,5 +81,7 @@ window.PAMS_LANG.bn = {
     'Switch to light mode': 'লাইট মোডে স্যুইচ করুন',
     'All Campuses': 'সব ক্যাম্পাস',
     'All Categories': 'সব বিভাগ',
-    'All Conditions': 'সব অবস্থা'
+    'All Conditions': 'সব অবস্থা',
+    'Procurement & Receiving': 'ক্রয় ও গ্রহণ',
+    'Warehouse & Stock Issues': 'গুদাম ও পণ্য বিতরণ'
 };

@@ -86,5 +86,7 @@ window.PAMS_LANG.ti = {
     'Print Full Master Ledger': 'ምሉእ ዋና መዝገብ ሕተም',
     'Print Clearance Form': 'ቅጺ ፍቓድ ሕተም',
     'Verified Present': 'ምህላው ዝተረጋገጸ',
-    'Audit Checklist & Location Log': 'ዝርዝር ምርመራ ወ መዝገብ ቦታ'
+    'Audit Checklist & Location Log': 'ዝርዝር ምርመራ ወ መዝገብ ቦታ',
+    'Procurement & Receiving': 'ዕድጊትን ምቕባልን',
+    'Warehouse & Stock Issues': 'መኽዘንን ምውጻእ ንብረትን'
 };

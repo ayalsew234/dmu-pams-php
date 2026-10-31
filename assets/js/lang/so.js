@@ -86,5 +86,7 @@ window.PAMS_LANG.so = {
     'Print Full Master Ledger': 'Daabac Buugga Xisaabta Buuxa',
     'Print Clearance Form': 'Daabac Foomka Oggolaanshaha',
     'Verified Present': 'Joogitaanka la Xaqiijiyay',
-    'Audit Checklist & Location Log': 'Liiska Xisaabinta iyo Diiwaanka Goobta'
+    'Audit Checklist & Location Log': 'Liiska Xisaabinta iyo Diiwaanka Goobta',
+    'Procurement & Receiving': 'Iibka iyo Qaabilaadda',
+    'Warehouse & Stock Issues': 'Bakhaar iyo Bixinta Agabka'
 };

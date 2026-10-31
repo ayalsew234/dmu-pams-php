@@ -75,11 +75,13 @@
                     <select class="language-selector rounded-md border border-indigo-700 bg-indigo-900 px-2 py-1 text-white" aria-label="Select language">
                         <option value="en">English</option>
                         <option value="am">አማርኛ</option>
-                        <option value="or">AFAN OROMO</option>
-                        <option value="so">SOMALI</option>
+                        <option value="om">Afaan Oromoo</option>
+                        <option value="so">Soomaali</option>
                         <option value="ti">ትግርኛ</option>
                         <option value="gz">ግዕዝ</option>
-                    
+                        <option value="ar">العربية</option>
+                        <option value="bn">বাংলা</option>
+                        <option value="fr">Français</option>
                     </select>
                 </label>
 
@@ -151,9 +153,16 @@
             <div class="flex items-center justify-end gap-2 text-sm">
                 <label for="authLanguageSelector" class="font-medium">Language / ቋንቋ</label>
                 <select id="authLanguageSelector" class="language-selector rounded-md border border-slate-300 bg-white px-2 py-1 dark:bg-slate-900 dark:border-slate-700" aria-label="Select language">
-                    <option value="en">English</option>
-                    <option value="am">አማርኛ</option>
-                </select>
+                        <option value="en">English</option>
+                        <option value="am">አማርኛ</option>
+                        <option value="om">Afaan Oromoo</option>
+                        <option value="so">Soomaali</option>
+                        <option value="ti">ትግርኛ</option>
+                        <option value="gz">ግዕዝ</option>
+                        <option value="ar">العربية</option>
+                        <option value="bn">বাংলা</option>
+                        <option value="fr">Français</option>
+                    </select>
             </div>
             <div class="text-center">
                 <div class="mx-auto w-12 h-12 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center">DMU</div>
@@ -317,6 +326,7 @@
                     </select>
                     <input name="quantityReceived" required type="number" min="1" step="1" placeholder="Quantity received" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                     <label class="text-xs text-slate-500">Received date<input name="receivedDate" type="date" class="mt-1 w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></label>
+                    <textarea name="serialNumbers" rows="2" maxlength="101000" placeholder="Serial numbers (optional; one per received item, comma or new line separated; letters and numbers allowed, e.g. SN-AB123-ET)" class="md:col-span-3 p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700"></textarea>
                     <input name="invoiceNumber" placeholder="Supplier invoice number (optional)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                     <input name="invoiceAmount" type="number" min="0" step="0.01" placeholder="Invoice amount (ETB)" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
                     <input name="notes" placeholder="Receiving / invoice notes" class="p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
@@ -344,6 +354,23 @@
             <div>
                 <h2 class="text-2xl font-bold">Warehouse & Physical Stock Control</h2>
                 <p class="text-sm text-slate-500">Allocate buffer storage, issue stock with a Stock Issue Voucher (SIV), and print QR asset tags for physical labeling.</p>
+            </div>
+
+            <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-5 space-y-3">
+                <div>
+                    <h3 class="font-bold">Scan Printed Asset Tag</h3>
+                    <p class="text-sm text-slate-500">Scan a warehouse QR tag to view the asset or item details.</p>
+                </div>
+                <div id="warehouseScannerReader" class="hidden w-full max-w-md overflow-hidden rounded-lg"></div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="startWarehouseScannerButton" type="button" onclick="startWarehouseScanner()" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Start QR Scanner</button>
+                    <button id="stopWarehouseScannerButton" type="button" onclick="stopWarehouseScanner()" class="hidden border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm">Stop Camera</button>
+                </div>
+                <p id="warehouseScanMessage" class="hidden text-sm" role="status" aria-live="polite"></p>
+                <div id="warehouseScanDetails" class="hidden rounded-lg border border-slate-200 dark:border-slate-700 p-4" aria-live="polite">
+                    <h4 class="font-semibold mb-3">Scanned Asset Information</h4>
+                    <dl id="warehouseScanDetailsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm"></dl>
+                </div>
             </div>
 
             <form onsubmit="issueSelectedStock(event)" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 p-5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
@@ -430,7 +457,14 @@
                     <input type="text" id="searchQuery" oninput="renderAssetsTable()" placeholder="Search Tag ID, Asset Name, Custodian, Serial..." class="w-full md:w-96 pl-4 pr-4 py-2 rounded-lg text-sm border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                     <button id="registryAddAssetButton" onclick="openModal('addAssetModal')" class="bg-indigo-900 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Register New Property</button>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs">
+                    <div>
+                        <label class="block text-slate-500 mb-1">Registration Date</label>
+                        <select id="filterAssetRecency" onchange="renderAssetsTable()" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                            <option value="30">Recent (last 30 days)</option>
+                            <option value="all">All records</option>
+                        </select>
+                    </div>
                     <div>
                         <label class="block text-slate-500 mb-1">Filter Campus</label>
                         <select id="filterCampus" onchange="renderAssetsTable()" class="w-full p-2 rounded-lg border dark:bg-slate-900 border-slate-300 dark:border-slate-700">
@@ -636,6 +670,10 @@
                     <button id="stopAuditScannerButton" type="button" onclick="stopAuditScanner()" class="hidden border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm">Stop Camera</button>
                 </div>
                 <p id="auditScanMessage" class="hidden text-sm" role="status" aria-live="polite"></p>
+                <div id="auditScanDetails" class="hidden rounded-lg border border-slate-200 dark:border-slate-700 p-4" aria-live="polite">
+                    <h4 class="font-semibold mb-3">Scanned Asset Information</h4>
+                    <dl id="auditScanDetailsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm"></dl>
+                </div>
             </div>
             <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
                 <div class="p-4 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
@@ -843,7 +881,7 @@
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Serial Number / Unique ID</label>
-                        <input id="new-serial" type="text" placeholder="e.g. SN-99812-ET" class="w-full p-2.5 rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                        <input id="new-serial" type="text" maxlength="100" placeholder="Letters and numbers are allowed, e.g. SN-AB123-ET" class="w-full p-2.5 rounded-lg border dark:bg-slate-800 border-slate-300 dark:border-slate-700">
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Category *</label>
@@ -1099,6 +1137,9 @@
 
     <!-- Frontend Core Application Script -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
+    <?php foreach (['am', 'om', 'so', 'ti', 'gz', 'ar', 'bn', 'fr'] as $language): ?>
+        <script src="assets/js/lang/<?= $language ?>.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/' . $language . '.js') ?>"></script>
+    <?php endforeach; ?>
     <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 </body>
 </html>

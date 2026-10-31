@@ -86,5 +86,7 @@ window.PAMS_LANG.om = {
     'Print Full Master Ledger': 'Galmee Guutuu Maxxansi',
     'Print Clearance Form': 'Foomii Hayyamaa Maxxansi',
     'Verified Present': 'Argamuu Mirkana\'e',
-    'Audit Checklist & Location Log': 'Tarree Sakatta\'aa fi Galmee Bakka'
+    'Audit Checklist & Location Log': 'Tarree Sakatta\'aa fi Galmee Bakka',
+    'Procurement & Receiving': 'Bittaa fi Simannaa',
+    'Warehouse & Stock Issues': 'Kuusaa fi Meeshaa Baasuu'
 };

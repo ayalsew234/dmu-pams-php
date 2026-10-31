@@ -89,5 +89,7 @@ window.PAMS_LANG.fr = {
     'Print Clearance Form': 'Imprimer le formulaire d\'autorisation',
     'Expected Registered Items': 'Articles enregistrés attendus',
     'Verified Present': 'Présence vérifiée',
-    'Audit Checklist & Location Log': 'Liste de contrôle d\'audit et journal de localisation'
+    'Audit Checklist & Location Log': 'Liste de contrôle d\'audit et journal de localisation',
+    'Procurement & Receiving': 'Achats et réceptions',
+    'Warehouse & Stock Issues': 'Entrepôt et sorties de stock'
 };

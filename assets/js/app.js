@@ -26,168 +26,26 @@ let gateScanner = null;
 let gateScanInProgress = false;
 let auditScanner = null;
 let auditScanInProgress = false;
+let warehouseScanner = null;
+let warehouseScanInProgress = false;
+let lastWarehouseScannedText = '';
+let lastWarehouseScanAt = 0;
 let campusChartInstance = null;
 let conditionChartInstance = null;
 
 // Language system — translations loaded from assets/js/lang/*.js
 window.PAMS_LANG = window.PAMS_LANG || {};
 
-// Kept for backward-compat reverse lookup (am <-> en)
-const amharicTranslations = {
-    'Language / ቋንቋ': 'ቋንቋ',
-    'Select language': 'ቋንቋ ይምረጡ',
-    'Sign in to PAMS': 'ወደ PAMS ይግቡ',
-    'Use your assigned DMU account.': 'የተመደበልዎትን የDMU መለያ ይጠቀሙ።',
-    'Create the first administrator': 'የመጀመሪያውን አስተዳዳሪ ይፍጠሩ',
-    'Initial setup is open because no user accounts exist. This creates the System Administrator account.': 'ምንም የተጠቃሚ መለያ ስለሌለ የመጀመሪያ ማዋቀር ክፍት ነው። ይህ የስርዓት አስተዳዳሪ መለያ ይፈጥራል።',
-    'Create Administrator Account': 'የአስተዳዳሪ መለያ ይፍጠሩ',
-    'Administrator full name': 'የአስተዳዳሪው ሙሉ ስም',
-    'Username': 'የተጠቃሚ ስም',
-    'Password': 'የይለፍ ቃል',
-    'Use at least 12 characters for the first administrator password.': 'ለመጀመሪያው አስተዳዳሪ የይለፍ ቃል ቢያንስ 12 ቁምፊዎችን ይጠቀሙ።',
-    'Sign in': 'ግባ',
-    'Sign out': 'ውጣ',
-    'Fiscal Year': 'የበጀት ዓመት',
-    'Active Custodians': 'ንቁ ኃላፊዎች',
-    'Dashboard': 'ዳሽቦርድ',
-    'Asset Registry': 'የንብረት መዝገብ',
-    'Issuance & Transfers': 'ርክክብ እና ዝውውር',
-    'Maintenance & Repairs': 'ጥገና እና ማስተካከያ',
-    'Depreciation & Disposal': 'የዋጋ ቅናሽ እና ማስወገድ',
-    'Inventory Audit': 'የንብረት ቆጠራ ኦዲት',
-    'DMU Reports Generator': 'የDMU ሪፖርት ማዘጋጃ',
-    'User & Role Management': 'የተጠቃሚ እና ሚና አስተዳደር',
-    'System Audit Logs': 'የስርዓት ኦዲት መዝገቦች',
-    'DMU Executive Asset Dashboard': 'የDMU ንብረት አስተዳደር ዳሽቦርድ',
-    'Central overview for DMU property governance, departmental operations, technical services, and gate transit.': 'የDMU ንብረት አስተዳደር፣ የመምሪያ ሥራዎች፣ የቴክኒክ አገልግሎቶች እና የግቢ መግቢያ እንቅስቃሴዎች አጠቃላይ እይታ።',
-    '+ Add Asset': '+ ንብረት ጨምር',
-    'Transfer Item': 'ንብረት አዛውር',
-    'Log Repair': 'ጥገና መዝግብ',
-    'Total Valuation': 'ጠቅላላ ግምት ዋጋ',
-    'Capital Assets': 'ቋሚ ንብረቶች',
-    'Registered Assets': 'የተመዘገቡ ንብረቶች',
-    'Items Tracked': 'ክትትል የሚደረግባቸው ዕቃዎች',
-    'Active & Assigned': 'ንቁ እና የተመደቡ',
-    'In Active Use': 'በአገልግሎት ላይ',
-    'Assets Requiring Maintenance': 'ጥገና የሚያስፈልጋቸው ንብረቶች',
-    'Damaged / Under Repair': 'የተበላሹ / በጥገና ላይ',
-    'Pending Disposal': 'ለማስወገድ የሚጠብቁ',
-    'Obsolete Equipment': 'ጊዜ ያለፈባቸው መሣሪያዎች',
-    'DMU Central Management — Role Responsibilities': 'የDMU ማዕከላዊ አስተዳደር — የሚና ኃላፊነቶች',
-    'Signed-in staff see only the modules assigned to their role. API routes enforce the same permissions.': 'የገቡ ሠራተኞች የሚናቸውን ሞጁሎች ብቻ ያያሉ። የAPI መንገዶች ተመሳሳይ ፈቃዶችን ያስከብራሉ።',
-    'Central control for university property': 'ለዩኒቨርሲቲ ንብረት ማዕከላዊ ቁጥጥር',
-    'PAMS helps Property Administration, department heads, technicians, and gate security track equipment from registration through transfer, repair, audit, and disposal.': 'PAMS የንብረት አስተዳደር፣ የመምሪያ ኃላፊዎች፣ ቴክኒሻኖች እና የበር ጥበቃ ከመመዝገብ እስከ ዝውውር፣ ጥገና፣ ኦዲት እና ማስወገድ ዕቃዎችን እንዲከታተሉ ይረዳል።',
-    'Tag, locate, and value campus equipment in ETB.': 'የግቢ መሣሪያዎችን በብር ምዝገባ፣ አካባቢ እና ግምት ያድርጉ።',
-    'Approve movement and print official gate-pass vouchers.': 'እንቅስቃሴን ያጽድቁ እና ይፋዊ የመውጫ ፈቃድ ያትሙ።',
-    'Work orders, diagnosis, costs, and spare-part notes.': 'የሥራ ትዕዛዞች፣ ምርመራ፣ ወጪዎች እና የመለዋወጫ ማስታወሻዎች።',
-    'QR verification with check-out and check-in clearance.': 'በQR ማረጋገጫ ከመውጣት እና ከመግባት ፈቃድ ጋር።',
-    'Campuses': 'ግቢዎች',
-    'Accounts, security, and audit logs.': 'መለያዎች፣ ደህንነት እና የኦዲት መዝገቦች።',
-    'Global register, transfers, counts, and disposal.': 'አጠቃላይ መዝገብ፣ ዝውውር፣ ቆጠራ እና ማስወገድ።',
-    'Department inventory, requests, and maintenance tickets.': 'የመምሪያ ንብረት፣ ጥያቄዎች እና የጥገና ትኬቶች።',
-    'Work-order progress, diagnosis, and repair costs.': 'የሥራ ትዕዛዝ ሂደት፣ ምርመራ እና የጥገና ወጪ።',
-    'Gate-pass scanning and transit clearance.': 'የመውጫ ፈቃድ መቃኘት እና የመንገድ ፈቃድ።',
-    'System Administrator': 'የስርዓት አስተዳዳሪ',
-    'Property Admin / Stock Officer': 'የንብረት አስተዳዳሪ / የእቃ ጠባቂ',
-    'Department Head / Dean': 'የመምሪያ ኃላፊ / ዲን',
-    'Maintenance / IT Technician': 'የጥገና / የIT ቴክኒሻን',
-    'Gate Security Officer': 'የበር ጥበቃ ኃላፊ',
-    'Campus Valuation Breakdown (ETB Millions)': 'በግቢ የተከፋፈለ የንብረት ግምት ዋጋ (ሚሊዮን ብር)',
-    'Total monetary value of equipment distributed per DMU campus': 'በእያንዳንዱ የDMU ግቢ የተመደቡ መሣሪያዎች ጠቅላላ የገንዘብ ዋጋ',
-    'Asset Health & Condition': 'የንብረት ጤና እና ሁኔታ',
-    'Physical condition status ratio': 'የአካላዊ ሁኔታ ሁኔታ መጠን',
-    'Search Tag ID, Asset Name, Custodian, Serial...': 'መለያ ቁጥር፣ የንብረት ስም፣ ኃላፊ ወይም መለያ ቁጥር ፈልግ...',
-    '+ Register New Property': '+ አዲስ ንብረት መዝግብ',
-    'Filter Campus': 'በግቢ አጣራ',
-    'All Campuses': 'ሁሉም ግቢዎች',
-    'Filter Category': 'በምድብ አጣራ',
-    'All Categories': 'ሁሉም ምድቦች',
-    'Filter Condition': 'በሁኔታ አጣራ',
-    'All Conditions': 'ሁሉም ሁኔታዎች',
-    'Asset Tag & Name': 'የንብረት መለያ እና ስም',
-    'Category': 'ምድብ',
-    'Location / Campus': 'ቦታ / ግቢ',
-    'Custodian': 'ኃላፊ',
-    'Cost (ETB)': 'ዋጋ (ብር)',
-    'Condition': 'ሁኔታ',
-    'Actions': 'ድርጊቶች',
-    'Inter-Department & Campus Transfers': 'በመምሪያ እና በግቢ መካከል ዝውውር',
-    'Track movement of university equipment between faculties and generate official Gate Passes.': 'በፋኩልቲዎች መካከል የዩኒቨርሲቲ መሣሪያዎችን እንቅስቃሴ ይከታተሉ እና ይፋዊ የመውጫ ፈቃዶችን ያዘጋጁ።',
-    'Expected Registered Items': 'የሚጠበቁ የተመዘገቡ ዕቃዎች',
-    'Verified Present': 'መኖራቸው የተረጋገጠ',
-    'Discrepancy / Unaccounted': 'ልዩነት / ያልተገኙ',
-    'Audit Checklist & Location Log': 'የኦዲት ማረጋገጫ ዝርዝር እና የቦታ መዝገብ',
-    'DMU Property Administration Reports': 'የDMU ንብረት አስተዳደር ሪፖርቶች',
-    'Annual Property Inventory Summary': 'ዓመታዊ የንብረት ቆጠራ ማጠቃለያ',
-    'Print Full Master Ledger': 'ሙሉ ዋና መዝገብ አትም',
-    'Departmental Custodian Clearance': 'የመምሪያ ንብረት ኃላፊ ማጣሪያ',
-    'Print Clearance Form': 'የማጣሪያ ቅጽ አትም',
-    'Name': 'ስም',
-    'Role': 'ሚና',
-    'Department': 'መምሪያ',
-    'Status': 'ሁኔታ',
-    'Action': 'ድርጊት',
-    'Time': 'ሰዓት',
-    'User': 'ተጠቃሚ',
-    'Details': 'ዝርዝሮች',
-    'Main Campus': 'ዋና ግቢ',
-    'Health Sciences': 'የጤና ሳይንስ',
-    'Technology Institute': 'የቴክኖሎጂ ተቋም',
-    'Agriculture Campus': 'የግብርና ግቢ',
-    'Electronics': 'ኤሌክትሮኒክስ',
-    'Lab Equipment': 'የላቦራቶሪ መሣሪያ',
-    'Vehicles': 'ተሽከርካሪዎች',
-    'Furniture': 'የቤት ዕቃዎች',
-    'New': 'አዲስ',
-    'Good': 'ጥሩ',
-    'Fair': 'መካከለኛ',
-    'Damaged': 'የተበላሸ',
-    'Obsolete': 'ጊዜ ያለፈበት',
-    'Cancel': 'ሰርዝ',
-    'Close': 'ዝጋ',
-    'Save': 'አስቀምጥ',
-    'Submit': 'አስገባ',
-    'Search': 'ፈልግ',
-    'Verified': 'ተረጋግጧል',
-    'Not verified': 'አልተረጋገጠም',
-    'Start QR Count': 'የQR ቆጠራ ጀምር',
-    'Stop Camera': 'ካሜራውን አቁም',
-    'Create Account': 'መለያ ፍጠር',
-    'Full name': 'ሙሉ ስም',
-    'Property Admin': 'የንብረት አስተዳዳሪ',
-    'Temporary password (12+ chars)': 'ጊዜያዊ የይለፍ ቃል (12+ ቁምፊዎች)',
-    'Department (for Dept Head)': 'መምሪያ (ለመምሪያ ኃላፊ)',
-    'No property items found.': 'ምንም የንብረት ዕቃ አልተገኘም።',
-    'Flagged for review': 'ለግምገማ ተሰይሟል',
-    'Flag for Review': 'ለግምገማ ሰይም',
-    'Clear Review Flag': 'የግምገማ ምልክት አጽዳ',
-    'Choose Asset': 'ንብረት ይምረጡ',
-    'Low Priority': 'ዝቅተኛ ቅድሚያ',
-    'Medium Priority': 'መካከለኛ ቅድሚያ',
-    'Urgent Priority': 'አስቸኳይ ቅድሚያ',
-    'Switch to dark mode': 'ወደ ጨለማ ሁነታ ቀይር',
-    'Switch to light mode': 'ወደ ብርሃን ሁነታ ቀይር',
-    'Welcome to Debre Markos University Property Asset & Management System — register assets, approve transfers, scan gate passes, and complete annual inventory audits.': 'እንኳን ወደ የደብረ ማርቆስ ዩኒቨርሲቲ የንብረት አስተዳደር ስርዓት በደህና መጡ — ንብረት ይመዝግቡ፣ ዝውውር ያጽድቁ፣ የመውጫ ፈቃድ ይቃኙ እና ዓመታዊ ቆጠራ ያጠናቁ።',
-    'Property Asset & Management System': 'የንብረት አስተዳደር ስርዓት'
-};
-
-// Build reverse map: translated value -> English (for switching back to English)
-const englishTranslations = Object.fromEntries(
-    Object.entries(amharicTranslations).map(([en, am]) => [am, en])
-);
-
-// Supported language codes
-const SUPPORTED_LANGS = ['en', 'am', 'om', 'gz', 'so', 'ti', 'zh', 'es', 'hi', 'ar', 'bn', 'pt', 'ru', 'ja', 'fr'];
+// Only locales with translation files are available in the selectors.
+const SUPPORTED_LANGS = ['en', 'am', 'om', 'so', 'ti', 'gz', 'ar', 'bn', 'fr'];
 
 let selectedLanguage = 'en';
 
 function translateText(value) {
-    if (selectedLanguage === 'en') return englishTranslations[value] || value;
+    if (selectedLanguage === 'en') return value;
     const map = window.PAMS_LANG[selectedLanguage];
     if (map && map[value]) return map[value];
-    // fallback: try reverse-map back to English key then translate
-    const enKey = englishTranslations[value] || value;
-    return (map && map[enKey]) || value;
+    return value;
 }
 
 const originalTextNodes = new WeakMap();
@@ -1098,6 +956,9 @@ function renderAssetsTable() {
     const campFilter = document.getElementById('filterCampus')?.value || 'All';
     const catFilter = document.getElementById('filterCategory')?.value || 'All';
     const condFilter = document.getElementById('filterCondition')?.value || 'All';
+    const recencyFilter = document.getElementById('filterAssetRecency')?.value || '30';
+    const recentCutoff = new Date();
+    recentCutoff.setDate(recentCutoff.getDate() - 30);
 
     const tbody = document.getElementById('assetsTableBody');
     tbody.innerHTML = '';
@@ -1109,7 +970,10 @@ function renderAssetsTable() {
         const matchCampus = campFilter === 'All' || a.campus === campFilter;
         const matchCat = catFilter === 'All' || a.category === catFilter;
         const matchCond = condFilter === 'All' || a.condition === condFilter;
-        return matchSearch && matchCampus && matchCat && matchCond;
+        const createdAt = a.created_at ? new Date(String(a.created_at).replace(' ', 'T')) : null;
+        const matchRecency = recencyFilter === 'all'
+            || (createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= recentCutoff);
+        return matchSearch && matchCampus && matchCat && matchCond && matchRecency;
     });
 
     if (filtered.length === 0) {
@@ -1222,8 +1086,9 @@ async function startGateScanner() {
             async decodedText => {
                 if (gateScanInProgress) return;
                 gateScanInProgress = true;
-                document.getElementById('gatePassLookup').value = decodedText.trim();
-                await lookupGatePassValue(decodedText.trim());
+                const gatePass = extractGatePassFromQrPayload(decodedText);
+                document.getElementById('gatePassLookup').value = gatePass;
+                await lookupGatePassValue(gatePass);
                 await stopGateScanner();
                 gateScanInProgress = false;
             },
@@ -1245,6 +1110,12 @@ async function startGateScanner() {
     } finally {
         startButton.disabled = false;
     }
+}
+
+function extractGatePassFromQrPayload(decodedText) {
+    const rawText = String(decodedText || '').trim();
+    const match = rawText.match(/(?:gate\s*pass|voucher(?:\s*number)?)\s*[:=]\s*([^\r\n]+)/i);
+    return (match ? match[1] : rawText).trim();
 }
 
 async function stopGateScanner() {
@@ -2043,7 +1914,7 @@ function extractAssetIdFromQrPayload(decodedText) {
 
     const normalized = rawText.replace(/\r/g, '');
     const matchPatterns = [
-        /(?:asset\s*id|tag\s*id|id)\s*[:=]\s*([A-Za-z0-9][A-Za-z0-9-]*)/i,
+        /(?:asset\s*id|tag\s*id|id)\s*[:=]\s*([^\r\n]+)/i,
         /\b[A-Z]{2,}-[A-Z0-9-]+\b/i,
         /\b[A-Z0-9]{3,}-\d+\b/i
     ];
@@ -2061,6 +1932,179 @@ function extractAssetIdFromQrPayload(decodedText) {
     return rawText.toUpperCase();
 }
 
+async function startWarehouseScanner() {
+    const reader = document.getElementById('warehouseScannerReader');
+    const startButton = document.getElementById('startWarehouseScannerButton');
+    const stopButton = document.getElementById('stopWarehouseScannerButton');
+    if (typeof Html5Qrcode === 'undefined') {
+        showWarehouseScanMessage('The QR scanner library could not be loaded.', 'error');
+        return;
+    }
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        showWarehouseScanMessage('Camera scanning requires localhost or HTTPS and a browser with camera support.', 'error');
+        return;
+    }
+
+    startButton.disabled = true;
+    reader.classList.remove('hidden');
+    try {
+        warehouseScanner = warehouseScanner || new Html5Qrcode('warehouseScannerReader');
+        const scanOptions = { fps: 10, qrbox: { width: 240, height: 180 } };
+        try {
+            await warehouseScanner.start({ facingMode: 'environment' }, scanOptions, handleWarehouseQrScan, () => {});
+        } catch (facingModeError) {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras.length) throw facingModeError;
+            const camera = cameras.find(({ label }) => /back|rear|environment/i.test(label)) || cameras[0];
+            await warehouseScanner.start(camera.id, scanOptions, handleWarehouseQrScan, () => {});
+        }
+        stopButton.classList.remove('hidden');
+        showWarehouseScanMessage('Camera ready. Scan a printed asset tag.', 'success');
+    } catch (err) {
+        reader.classList.add('hidden');
+        console.error('Could not start warehouse QR scanner:', err);
+        const text = /permission|denied/i.test(String(err?.message || err))
+            ? 'Camera permission is blocked. Allow camera access for this site, then try again.'
+            : 'Could not start the camera. Check browser permissions and camera availability.';
+        showWarehouseScanMessage(text, 'error');
+    } finally {
+        startButton.disabled = Boolean(warehouseScanner && warehouseScanner.isScanning);
+    }
+}
+
+async function handleWarehouseQrScan(decodedText) {
+    const now = Date.now();
+    if (warehouseScanInProgress || (decodedText === lastWarehouseScannedText && now - lastWarehouseScanAt < 1800)) return;
+    warehouseScanInProgress = true;
+    lastWarehouseScannedText = decodedText;
+    lastWarehouseScanAt = now;
+    try {
+        const qrData = parseAssetQrPayload(decodedText);
+        const scannedAssetId = qrData.id.trim().toUpperCase();
+        const asset = warehouseData.assets.find(entry => String(entry.id).toUpperCase() === scannedAssetId)
+            || assets.find(entry => String(entry.id).toUpperCase() === scannedAssetId)
+            || null;
+        renderWarehouseScanDetails(asset, qrData);
+        if (asset) {
+            showWarehouseScanMessage(`Asset ${asset.id} found. Full asset information is shown below.`, 'success');
+        } else {
+            showWarehouseScanMessage('QR details were read, but this asset is not in the current warehouse list.', 'error');
+        }
+    } catch (err) {
+        console.error('Could not read warehouse asset QR code:', err);
+        showWarehouseScanMessage('Could not read this QR code. Try scanning the printed asset tag again.', 'error');
+    } finally {
+        warehouseScanInProgress = false;
+    }
+}
+
+async function stopWarehouseScanner() {
+    const reader = document.getElementById('warehouseScannerReader');
+    const stopButton = document.getElementById('stopWarehouseScannerButton');
+    const startButton = document.getElementById('startWarehouseScannerButton');
+    if (warehouseScanner && warehouseScanner.isScanning) {
+        try {
+            await warehouseScanner.stop();
+        } catch (err) {
+            console.error('Could not stop warehouse QR scanner:', err);
+            showWarehouseScanMessage('The camera scanner could not be stopped cleanly. Close this page to release camera access.', 'error');
+        }
+    }
+    if (!warehouseScanner || !warehouseScanner.isScanning) {
+        reader.classList.add('hidden');
+        stopButton.classList.add('hidden');
+        startButton.disabled = false;
+    }
+}
+
+function showWarehouseScanMessage(message, type) {
+    const result = document.getElementById('warehouseScanMessage');
+    result.textContent = message;
+    result.classList.remove('hidden', 'text-rose-700', 'text-emerald-700');
+    result.classList.add(type === 'error' ? 'text-rose-700' : 'text-emerald-700');
+}
+
+function parseAssetQrPayload(decodedText) {
+    const lines = String(decodedText || '').replace(/\r/g, '').split('\n').map(line => line.trim()).filter(Boolean);
+    const fields = {};
+    lines.forEach(line => {
+        const match = line.match(/^([^:]+):\s*(.*)$/);
+        if (match) fields[match[1].trim().toLowerCase()] = match[2].trim();
+    });
+    const campus = fields.campus || '';
+    const campusParts = campus.match(/^(.*?)\s*\((.*?)\)\s*$/);
+    return {
+        id: extractAssetIdFromQrPayload(decodedText),
+        name: lines.length >= 3 && /debre markos university/i.test(lines[0]) ? lines[2] : '',
+        category: fields.category || '',
+        campus: campusParts ? campusParts[1].trim() : campus,
+        department: campusParts ? campusParts[2].trim() : '',
+        custodian: fields.custodian || '',
+        serial: fields['serial no'] || fields['serial number'] || '',
+        condition: fields.condition || '',
+        status: fields['asset status'] || '',
+        stockStatus: fields['stock status'] || '',
+        storageLocation: fields['storage location'] || '',
+        cost: fields['acquisition cost'] || '',
+        acquisitionDate: fields['acquisition date'] || '',
+        building: fields.building || '',
+        room: fields.room || '',
+        purchaseOrder: fields['purchase order'] || '',
+        goodsReceiptNote: fields['goods receipt note'] || '',
+        tagStatus: fields['physical tag status'] || ''
+    };
+}
+
+function renderAssetScanDetails(panelId, gridId, asset, qrData, extraDetails = []) {
+    const panel = document.getElementById(panelId);
+    const grid = document.getElementById(gridId);
+    if (!panel || !grid) return;
+
+    const value = (...candidates) => {
+        const found = candidates.find(candidate => candidate !== null && candidate !== undefined && String(candidate).trim() !== '');
+        return found === undefined ? 'Not provided' : String(found);
+    };
+    const details = [
+        ['Asset ID', value(asset?.id, asset?.asset_id, qrData.id)],
+        ['Asset name', value(asset?.name, asset?.asset_name, qrData.name)],
+        ['Category', value(asset?.category, qrData.category)],
+        ['Serial number', value(asset?.serial, qrData.serial)],
+        ['Campus', value(asset?.campus, qrData.campus)],
+        ['Department', value(asset?.department, qrData.department)],
+        ['Building', value(asset?.building, qrData.building)],
+        ['Room', value(asset?.room, qrData.room)],
+        ['Custodian', value(asset?.custodian, qrData.custodian)],
+        ['Acquisition cost (ETB)', value(asset?.cost, qrData.cost)],
+        ['Acquisition date', value(asset?.acq_date, qrData.acquisitionDate)],
+        ['Condition', value(asset?.condition, qrData.condition)],
+        ['Asset status', value(asset?.status, qrData.status)],
+        ['Stock status', value(asset?.stock_status, qrData.stockStatus)],
+        ['Storage location', value(asset?.storage_location, qrData.storageLocation)],
+        ['Purchase order', value(asset?.purchase_order_id, qrData.purchaseOrder)],
+        ['Goods receipt note', value(asset?.goods_receipt_note_id, qrData.goodsReceiptNote)],
+        ['Physical tag status', value(asset?.tagged_at ? `Applied ${asset.tagged_at}` : '', qrData.tagStatus)],
+        ...extraDetails
+    ];
+
+    grid.innerHTML = details.map(([label, detail]) => `
+        <div>
+            <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">${escapeHtml(label)}</dt>
+            <dd class="font-semibold break-words">${escapeHtml(detail)}</dd>
+        </div>
+    `).join('');
+    panel.classList.remove('hidden');
+}
+
+function renderAuditScanDetails(asset, qrData, countStatus) {
+    renderAssetScanDetails('auditScanDetails', 'auditScanDetailsGrid', asset, qrData, [
+        ['Physical count', countStatus || 'Not recorded']
+    ]);
+}
+
+function renderWarehouseScanDetails(asset, qrData) {
+    renderAssetScanDetails('warehouseScanDetails', 'warehouseScanDetailsGrid', asset, qrData);
+}
+
 function buildAssetQrPayload(item) {
     const assetId = item?.id || 'Unknown asset';
     const assetName = item?.name || 'Unknown item';
@@ -2068,15 +2112,37 @@ function buildAssetQrPayload(item) {
     const department = item?.department || 'N/A';
     const custodian = item?.custodian || 'N/A';
     const serial = item?.serial || 'N/A';
+    const category = item?.category || 'N/A';
+    const building = item?.building || 'N/A';
+    const room = item?.room || 'N/A';
+    const acquisitionCost = item?.cost ?? 'N/A';
+    const acquisitionDate = item?.acq_date || 'N/A';
+    const condition = item?.condition || 'N/A';
+    const status = item?.status || 'N/A';
+    const stockStatus = item?.stock_status || 'N/A';
+    const storageLocation = item?.storage_location || 'N/A';
+    const purchaseOrder = item?.purchase_order_id || 'N/A';
+    const goodsReceiptNote = item?.goods_receipt_note_id || 'N/A';
     const tagStatus = item?.tagged_at ? `Applied ${item.tagged_at}` : 'Not yet applied';
 
     return [
         'Debre Markos University',
-        assetId,
+        `Asset ID: ${assetId}`,
         assetName,
+        `Category: ${category}`,
         `Campus: ${campus} (${department})`,
+        `Building: ${building}`,
+        `Room: ${room}`,
         `Custodian: ${custodian}`,
         `Serial No: ${serial}`,
+        `Acquisition cost: ${acquisitionCost}`,
+        `Acquisition date: ${acquisitionDate}`,
+        `Condition: ${condition}`,
+        `Asset status: ${status}`,
+        `Stock status: ${stockStatus}`,
+        `Storage location: ${storageLocation}`,
+        `Purchase order: ${purchaseOrder}`,
+        `Goods receipt note: ${goodsReceiptNote}`,
         `Physical tag status: ${tagStatus}`
     ].join('\n');
 }
@@ -2085,15 +2151,21 @@ async function handleAuditQrScan(decodedText) {
     if (auditScanInProgress) return;
     auditScanInProgress = true;
     try {
-        const scannedAssetId = extractAssetIdFromQrPayload(decodedText).trim().toUpperCase();
+        const qrData = parseAssetQrPayload(decodedText);
+        const scannedAssetId = qrData.id.trim().toUpperCase();
         const item = physicalCountSession?.items.find(
             entry => entry.asset_id.toUpperCase() === scannedAssetId
         );
+        const asset = assets.find(entry => entry.id.toUpperCase() === scannedAssetId)
+            || warehouseData.assets.find(entry => entry.id.toUpperCase() === scannedAssetId)
+            || item;
         if (!item) {
+            renderAuditScanDetails(asset, qrData, 'Not included in the active physical count session');
             showAuditScanMessage(`No asset with ID "${scannedAssetId}" is in this count session.`, 'error');
             return;
         }
         if (item.is_verified === true) {
+            renderAuditScanDetails(asset, qrData, 'Already counted as present');
             showAuditScanMessage(`${item.asset_id} was already counted as present.`, 'success');
             return;
         }
@@ -2106,6 +2178,7 @@ async function handleAuditQrScan(decodedText) {
         checkbox.checked = true;
         const saved = await updateAuditItem(item.asset_id, checkbox);
         if (saved) {
+            renderAuditScanDetails(asset, qrData, 'Counted as present');
             showAuditScanMessage(`${item.asset_id} counted as present. Scan the next asset tag.`, 'success');
         }
     } catch (err) {
@@ -2274,7 +2347,7 @@ function viewTagModal(id) {
     qrContainer.innerHTML = '';
     const qrPayload = buildAssetQrPayload(item);
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: qrPayload, width: 128, height: 128 });
+        new QRCode(qrContainer, { text: qrPayload, width: 180, height: 180 });
     } else {
         qrContainer.textContent = qrPayload;
     }
@@ -2320,13 +2393,29 @@ function openGatePassModal(id) {
     document.getElementById('gp-officer').textContent = tr.requested_by;
     const qrContainer = document.getElementById('gp-qrcode');
     qrContainer.innerHTML = '';
+    const qrPayload = buildGatePassQrPayload(tr);
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: tr.gate_pass, width: 112, height: 112 });
+        new QRCode(qrContainer, { text: qrPayload, width: 180, height: 180 });
     } else {
-        qrContainer.textContent = tr.gate_pass;
+        qrContainer.textContent = qrPayload;
     }
 
     openModal('gatePassModal');
+}
+
+function buildGatePassQrPayload(transfer) {
+    return [
+        'Debre Markos University Gate Pass',
+        `Gate Pass: ${transfer.gate_pass || 'N/A'}`,
+        `Transfer ID: ${transfer.id || 'N/A'}`,
+        `Asset ID: ${transfer.asset_id || 'N/A'}`,
+        `Asset Name: ${transfer.asset_name || 'N/A'}`,
+        `Transfer Date: ${transfer.transfer_date || 'N/A'}`,
+        `From: ${transfer.from_campus || 'N/A'} (${transfer.from_dept || 'N/A'})`,
+        `To: ${transfer.to_campus || 'N/A'} (${transfer.to_dept || 'N/A'})`,
+        `Requested By: ${transfer.requested_by || 'N/A'}`,
+        `Approval Status: ${transfer.status || 'N/A'}`
+    ].join('\n');
 }
 
 async function flagDisposal(id) {

@@ -8,7 +8,8 @@ if ($method === 'GET') {
     try {
         $assets = $pdo->query(
             'SELECT id, name, category, campus, department, building, room, custodian, serial,
-                    `condition`, status, stock_status, storage_location, tagged_at, cost, acq_date
+                    `condition`, status, stock_status, storage_location, tagged_at, cost, acq_date,
+                    purchase_order_id, goods_receipt_note_id
              FROM assets
              ORDER BY stock_status, storage_location, name'
         )->fetchAll();

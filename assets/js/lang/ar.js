@@ -84,5 +84,7 @@ window.PAMS_LANG.ar = {
     'All Categories': 'جميع الفئات',
     'All Conditions': 'جميع الحالات',
     'Print Full Master Ledger': 'طباعة دفتر الأستاذ الرئيسي الكامل',
-    'Print Clearance Form': 'طباعة نموذج التخليص'
+    'Print Clearance Form': 'طباعة نموذج التخليص',
+    'Procurement & Receiving': 'المشتريات والاستلام',
+    'Warehouse & Stock Issues': 'المستودع وصرف المخزون'
 };

@@ -114,5 +114,7 @@ window.PAMS_LANG.am = {
     'Print Clearance Form': 'የማጣሪያ ቅጽ አትም',
     'Expected Registered Items': 'የሚጠበቁ የተመዘገቡ ዕቃዎች',
     'Verified Present': 'መኖራቸው የተረጋገጠ',
-    'Audit Checklist & Location Log': 'የኦዲት ማረጋገጫ ዝርዝር እና የቦታ መዝገብ'
+    'Audit Checklist & Location Log': 'የኦዲት ማረጋገጫ ዝርዝር እና የቦታ መዝገብ',
+    'Procurement & Receiving': 'ግዥ እና እቃ መቀበያ',
+    'Warehouse & Stock Issues': 'መጋዘን እና የእቃ አወጣጥ'
 };
