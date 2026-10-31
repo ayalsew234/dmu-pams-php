@@ -71,7 +71,7 @@
                 </button>
 
                 <label class="flex items-center gap-2 text-xs text-indigo-100">
-                    <span>Language / ቋንቋ</span>
+                    <span>Language / ቋንቋ</span>አያል
                     <select class="language-selector rounded-md border border-indigo-700 bg-indigo-900 px-2 py-1 text-white" aria-label="Select language">
                         <option value="en">English</option>
                         <option value="am">አማርኛ</option>
