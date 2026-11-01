@@ -11,10 +11,12 @@
 1. Place this project under the XAMPP `htdocs` directory.
 2. Start Apache and MySQL from the XAMPP Control Panel.
 3. Import `schema.sql` using phpMyAdmin or the MySQL command line. The script creates the `dmu_pams` database and its sample asset, transfer, and maintenance records.
-4. If your MySQL connection differs from the XAMPP defaults, set `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in the PHP environment before starting Apache. Defaults are `127.0.0.1`, `dmu_pams`, `root`, and an empty password.
+4. The shared PDO connection in `config/database.php` uses the `dmu_pams` database. Its XAMPP defaults are host `127.0.0.1`, port `3306`, user `root`, and an empty password. If your MySQL settings differ, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in the PHP environment before starting Apache.
 5. Open `http://localhost/dmu-pams-php/` (adjust the URL to match the project folder name).
 
 The frontend loads assets, transfers, and maintenance tickets through the PHP endpoints in `api/`. Data changes are saved to MySQL and are available after reloading the page. Gate Security Scanner supports gate-pass QR scanning and manual voucher-number lookup; camera access requires browser permission and a secure context such as localhost or HTTPS. When accessing PAMS from another device, serve it over HTTPS; browsers generally block camera access to non-local HTTP addresses.
+
+All API endpoints include `api/bootstrap.php`, which opens the same PDO connection and uses the `dmu_pams` tables: `assets`, `asset_acknowledgements`, `asset_disposal_cases`, `asset_incidents`, `compliance_inspections`, `gate_transit_events`, `goods_receipt_notes`, `maintenance`, `physical_count_items`, `physical_count_sessions`, `purchase_orders`, `stock_issue_vouchers`, `stock_issue_voucher_items`, `system_audit_logs`, `transfers`, `users`, and `vendors`. The `schema.sql` file defines these tables for a new database. For an existing database, apply the documented upgrade scripts once, in order, so all API workflows have their required columns and tables.
 
 The Inventory Audit tab starts a physical count session using a snapshot of the current asset register. Assets can be counted automatically by scanning their QR tags with a camera or verified manually; both methods save changes immediately. Camera access requires browser permission and a secure context such as localhost or HTTPS. Starting another session completes the previous active session while keeping its count records.
 
@@ -48,7 +50,8 @@ The root `.gitignore` excludes local environment files, dependency and build dir
 
 - `GET api/auth.php?action=status`, `POST api/auth.php?action=setup` (first local admin only), `POST api/auth.php?action=login`, and `POST api/auth.php?action=logout`
 - `GET api/auth.php?action=users`, `POST api/auth.php?action=users`, `POST api/auth.php?action=user-update`, and `POST api/auth.php?action=user-status` (System Administrator only)
-- `GET api/audit-logs.php` (System Administrator, Property Admin, and Internal Auditor)
+- `POST api/system-reset.php` (System Administrator only; permanently deletes application data, audit history, and all other user accounts after the exact confirmation phrase, while preserving the signed-in System Administrator account)
+- `GET api/audit-logs.php` (System Administrator, Property Admin, and Internal Auditor; supports `q`, `sort`, and `page` query parameters and returns 10 records per page while searching all audit history)
 - `GET api/auditor.php` / `POST api/auditor.php` / `PATCH api/auditor.php` (Internal Auditor financial/reconciliation summaries, open incidents, compliance findings, and finding status)
 - `GET api/disposal-committee.php` / `POST api/disposal-committee.php` / `PATCH api/disposal-committee.php` (committee case list, inspection findings, disposition decisions, and certificate issuance)
 - `GET api/assets.php` / `POST api/assets.php` / `PATCH api/assets.php` (role-checked asset access and disposal flag using `{"assetId":"..."}`)

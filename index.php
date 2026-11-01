@@ -36,9 +36,7 @@
     <header id="appHeader" class="hidden border-b bg-indigo-950 border-indigo-900 text-white px-6 py-4">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center font-bold text-slate-950 border-2 border-amber-300 text-xl shadow-lg">
-                    DMU
-                </div>
+                <img src="assets/img/dmu.png" alt="Debre Markos University logo" class="h-14 w-14 rounded-full border-2 border-amber-300 bg-white object-contain shadow-lg">
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="text-xl font-bold tracking-wide">DEBRE MARKOS UNIVERSITY</h1>
@@ -79,9 +77,6 @@
                         <option value="so">Soomaali</option>
                         <option value="ti">ትግርኛ</option>
                         <option value="gz">ግዕዝ</option>
-                        <option value="ar">العربية</option>
-                        <option value="bn">বাংলা</option>
-                        <option value="fr">Français</option>
                     </select>
                 </label>
 
@@ -141,6 +136,9 @@
             <button onclick="switchTab('users')" id="nav-users" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 User & Role Management
             </button>
+            <button onclick="openSystemResetFromNav()" id="nav-system-reset" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-semibold border-b-2 border-transparent text-rose-700 dark:text-rose-300 hover:text-rose-900">
+                Reset Data
+            </button>
             <button onclick="switchTab('audit-logs')" id="nav-audit-logs" class="nav-btn hidden flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900">
                 System Audit Logs
             </button>
@@ -159,13 +157,10 @@
                         <option value="so">Soomaali</option>
                         <option value="ti">ትግርኛ</option>
                         <option value="gz">ግዕዝ</option>
-                        <option value="ar">العربية</option>
-                        <option value="bn">বাংলা</option>
-                        <option value="fr">Français</option>
                     </select>
             </div>
             <div class="text-center">
-                <div class="mx-auto w-12 h-12 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center">DMU</div>
+                <img src="assets/img/dmu.png" alt="Debre Markos University logo" class="mx-auto h-14 w-14 rounded-full border border-slate-200 bg-white object-contain">
                 <h2 id="authHeading" class="text-xl font-bold mt-3">DEBRE MARKOS UNIVERSITY</h2>
                 <p id="authDescription" class="text-sm text-slate-500 mt-1">Use your assigned DMU account.</p>
             </div>
@@ -810,13 +805,39 @@
                     <tbody id="usersTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
                 </table>
             </div>
+            <section class="rounded-xl border-2 border-rose-300 bg-rose-50 p-5 dark:border-rose-900 dark:bg-rose-950/30 space-y-3">
+                <div>
+                    <h3 class="font-bold text-rose-800 dark:text-rose-300">Delete all application records</h3>
+                    <p class="mt-1 text-sm text-rose-700 dark:text-rose-200">Permanently removes assets, procurement and stock records, transfers, maintenance, physical counts, incidents, compliance and disposal records, all audit history, and every user account except the System Administrator currently signed in.</p>
+                </div>
+                <button type="button" onclick="openModal('systemResetModal')" class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800">Delete All Records</button>
+            </section>
         </section>
 
         <section id="tab-audit-logs" class="tab-content hidden space-y-6">
             <div>
                 <h2 class="text-2xl font-bold">System Audit Logs</h2>
-                <p class="text-sm text-slate-500">Read-only record of account, transfer, work-order, and gate transit actions.</p>
+                <p class="text-sm text-slate-500">Read-only history. Shows 10 entries per page; search checks the full audit history.</p>
             </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <label class="flex-1">
+                    <span class="sr-only">Search audit logs</span>
+                    <input id="auditLogsSearch" type="search" oninput="searchAuditLogs()" placeholder="Search all history by user, action, date, or details..." class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800" />
+                </label>
+                <label class="sm:w-56">
+                    <span class="sr-only">Sort audit logs</span>
+                    <select id="auditLogsSort" onchange="changeAuditLogSort()" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800">
+                        <option value="recent">Most recent</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="action-asc">Action A–Z</option>
+                        <option value="action-desc">Action Z–A</option>
+                        <option value="user-asc">User A–Z</option>
+                        <option value="user-desc">User Z–A</option>
+                    </select>
+                </label>
+            </div>
+            <p id="auditLogsResultCount" class="text-xs text-slate-500" aria-live="polite"></p>
+            <div id="auditLogsPagination" class="flex items-center justify-between gap-3" aria-label="Audit log pages"></div>
             <div class="rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-100 dark:bg-slate-900"><tr><th class="p-3">Time</th><th class="p-3">User</th><th class="p-3">Action</th><th class="p-3">Details</th></tr></thead>
@@ -1035,19 +1056,34 @@
                 <button onclick="closeModal('viewTagModal')" class="text-slate-400" aria-label="Close tag view">✕</button>
             </div>
             <div id="tagBox" class="p-4 rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/30 dark:bg-slate-800/40 space-y-3">
-                <div class="flex justify-between items-start">
-                    <div>
+                <div class="flex justify-between items-start gap-3">
+                    <div class="flex items-center gap-2">
+                        <img src="assets/img/dmu.png" alt="DMU logo" class="h-10 w-10 rounded-full border border-slate-200 bg-white object-contain">
                         <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-900 dark:text-indigo-300">Debre Markos University</span>
+                    </div>
+                    <div class="mt-1">
                         <p id="tag-id" class="font-mono text-lg font-extrabold text-indigo-600 dark:text-amber-400"></p>
+                        <p id="tag-name" class="font-bold text-sm text-slate-900 dark:text-slate-100"></p>
                     </div>
                     <div id="qrcode" class="p-1 bg-white rounded border"></div>
                 </div>
-                <div class="space-y-1 text-xs border-t pt-2 border-slate-200 dark:border-slate-700">
-                    <p id="tag-name" class="font-bold text-sm text-slate-900 dark:text-slate-100"></p>
-                    <p><span class="text-slate-400">Campus:</span> <span id="tag-campus"></span></p>
-                    <p><span class="text-slate-400">Custodian:</span> <span id="tag-custodian"></span></p>
-                    <p><span class="text-slate-400">Serial No:</span> <span id="tag-serial"></span></p>
-                    <p><span class="text-slate-400">Physical tag status:</span> <span id="tag-status"></span></p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs border-t pt-2 border-slate-200 dark:border-slate-700">
+                    <p><span class="text-slate-500">Category:</span> <span id="tag-category"></span></p>
+                    <p><span class="text-slate-500">Serial number:</span> <span id="tag-serial"></span></p>
+                    <p><span class="text-slate-500">Campus:</span> <span id="tag-campus"></span></p>
+                    <p><span class="text-slate-500">Department:</span> <span id="tag-department"></span></p>
+                    <p><span class="text-slate-500">Building:</span> <span id="tag-building"></span></p>
+                    <p><span class="text-slate-500">Room:</span> <span id="tag-room"></span></p>
+                    <p><span class="text-slate-500">Custodian:</span> <span id="tag-custodian"></span></p>
+                    <p><span class="text-slate-500">Acquisition cost:</span> <span id="tag-cost"></span></p>
+                    <p><span class="text-slate-500">Acquisition date:</span> <span id="tag-acq-date"></span></p>
+                    <p><span class="text-slate-500">Condition:</span> <span id="tag-condition"></span></p>
+                    <p><span class="text-slate-500">Asset status:</span> <span id="tag-asset-status"></span></p>
+                    <p><span class="text-slate-500">Stock status:</span> <span id="tag-stock-status"></span></p>
+                    <p><span class="text-slate-500">Storage location:</span> <span id="tag-storage"></span></p>
+                    <p><span class="text-slate-500">Purchase order:</span> <span id="tag-po"></span></p>
+                    <p><span class="text-slate-500">Goods receipt note:</span> <span id="tag-grn"></span></p>
+                    <p class="col-span-2"><span class="text-slate-500">Physical tag status:</span> <span id="tag-status"></span></p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -1061,7 +1097,10 @@
         <div class="w-full max-w-2xl bg-white text-slate-900 rounded-xl p-8 shadow-2xl space-y-5 border-4 border-indigo-950">
             <div id="sivPrintBox" class="space-y-5">
                 <div class="text-center border-b-2 border-indigo-950 pb-4">
-                    <h2 class="text-lg font-bold text-indigo-950">DEBRE MARKOS UNIVERSITY</h2>
+                    <div class="flex items-center justify-center gap-3">
+                        <img src="assets/img/dmu.png" alt="Debre Markos University logo" class="h-12 w-12 rounded-full border border-slate-200 bg-white object-contain">
+                        <h2 class="text-lg font-bold text-indigo-950">DEBRE MARKOS UNIVERSITY</h2>
+                    </div>
                     <p class="text-xs font-semibold text-slate-600">PROPERTY ADMINISTRATION DIRECTORATE / STORE</p>
                     <p class="text-xs font-mono mt-1 underline">STOCK ISSUE VOUCHER</p>
                 </div>
@@ -1089,10 +1128,18 @@
     </div>
 
     <!-- MODAL 5: PRINTABLE GATE PASS VOUCHER -->
-    <div id="gatePassModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="w-full max-w-xl bg-white text-slate-900 rounded-xl p-8 shadow-2xl space-y-6 border-4 border-indigo-950">
-            <div class="text-center border-b-2 border-indigo-950 pb-4">
-                <h2 class="text-lg font-bold text-indigo-950">DEBRE MARKOS UNIVERSITY</h2>
+    <div id="gatePassModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3">
+        <div class="w-full max-w-lg max-h-[calc(100vh-1.5rem)] overflow-y-auto bg-white text-slate-900 rounded-xl p-5 shadow-2xl space-y-4 border-2 border-indigo-950">
+            <div class="gate-pass-screen-controls flex justify-start">
+                <button type="button" onclick="closeModal('gatePassModal')" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-indigo-950 hover:bg-slate-100" aria-label="Return to Transfers page">
+                    <span aria-hidden="true">←</span> Back to Transfers
+                </button>
+            </div>
+            <div class="text-center border-b-2 border-indigo-950 pb-3">
+                <div class="flex items-center justify-center gap-3">
+                    <img src="assets/img/dmu.png" alt="Debre Markos University logo" class="h-11 w-11 rounded-full border border-slate-200 bg-white object-contain">
+                    <h2 class="text-base font-bold text-indigo-950">DEBRE MARKOS UNIVERSITY</h2>
+                </div>
                 <p class="text-xs font-semibold text-slate-600">PROPERTY ADMINISTRATION DIRECTORATE</p>
                 <p class="text-xs font-mono mt-1 underline">OFFICIAL INTER-CAMPUS GATE PASS / ITEM TRANSFER VOUCHER</p>
             </div>
@@ -1100,15 +1147,15 @@
                 <span>Voucher No: <strong id="gp-num"></strong></span>
                 <span>Date: <strong id="gp-date"></strong></span>
             </div>
-            <div id="gp-qrcode" class="flex justify-center p-3 bg-white rounded border border-slate-200"></div>
-            <div class="p-4 bg-slate-100 rounded border border-slate-300 space-y-2 text-xs">
+            <div id="gp-qrcode" class="flex justify-center p-2 bg-white rounded border border-slate-200"></div>
+            <div class="p-3 bg-slate-100 rounded border border-slate-300 space-y-1.5 text-xs">
                 <p><strong>Item Name:</strong> <span id="gp-assetName"></span></p>
                 <p><strong>Asset Tag ID:</strong> <span id="gp-assetId"></span></p>
                 <p><strong>Origin:</strong> <span id="gp-origin"></span></p>
                 <p><strong>Destination:</strong> <span id="gp-dest"></span></p>
                 <p><strong>Authorized Officer:</strong> <span id="gp-officer"></span></p>
             </div>
-            <div class="grid grid-cols-2 gap-8 text-[11px] pt-6 border-t border-slate-300">
+            <div class="grid grid-cols-2 gap-6 text-[11px] pt-4 border-t border-slate-300">
                 <div>
                     <p class="font-bold">Released By (Property Officer):</p>
                     <div class="h-10 border-b border-slate-400 mt-2"></div>
@@ -1120,10 +1167,25 @@
                     <p class="text-[9px] text-slate-400 mt-1">Checked & Released</p>
                 </div>
             </div>
-            <div class="flex justify-end gap-3 pt-4">
+            <div class="gate-pass-screen-controls flex justify-end gap-3 pt-4">
                 <button onclick="closeModal('gatePassModal')" class="px-4 py-2 bg-slate-200 text-slate-800 rounded text-xs">Close</button>
                 <button onclick="printContent('gate-pass')" class="px-4 py-2 bg-indigo-950 text-white rounded text-xs font-bold">Print Official Voucher</button>
             </div>
+        </div>
+    </div>
+
+    <div id="systemResetModal" class="hidden fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-lg rounded-xl border border-rose-300 bg-white p-6 shadow-2xl dark:border-rose-900 dark:bg-slate-900 space-y-4">
+            <h2 class="text-xl font-bold text-rose-700 dark:text-rose-300">Confirm full data deletion</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-300">This cannot be undone. All application records, audit history, and user accounts will be deleted except the System Administrator account currently signed in.</p>
+            <form onsubmit="confirmSystemDataReset(event)" class="space-y-3">
+                <label for="systemResetConfirmation" class="block text-sm font-semibold">Type <span class="font-mono">DELETE ALL DATA</span> to continue.</label>
+                <input id="systemResetConfirmation" name="confirmation" required autocomplete="off" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono dark:border-slate-600 dark:bg-slate-800">
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('systemResetModal')" class="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 dark:bg-slate-700 dark:text-white">Cancel</button>
+                    <button id="systemResetSubmit" type="submit" class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white">Permanently Delete</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1137,9 +1199,15 @@
 
     <!-- Frontend Core Application Script -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
-    <?php foreach (['am', 'om', 'so', 'ti', 'gz', 'ar', 'bn', 'fr'] as $language): ?>
+    <?php foreach (['am', 'om', 'so', 'ti', 'gz'] as $language): ?>
         <script src="assets/js/lang/<?= $language ?>.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/' . $language . '.js') ?>"></script>
     <?php endforeach; ?>
+    <script src="assets/js/lang/table-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/table-ui.js') ?>"></script>
+    <script src="assets/js/lang/extra-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/extra-ui.js') ?>"></script>
+    <script src="assets/js/lang/workflow-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/workflow-ui.js') ?>"></script>
+    <script src="assets/js/lang/dashboard-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/dashboard-ui.js') ?>"></script>
+    <script src="assets/js/lang/session-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/session-ui.js') ?>"></script>
+    <script src="assets/js/lang/ethiopian-locale-ui.js?v=<?= filemtime(__DIR__ . '/assets/js/lang/ethiopian-locale-ui.js') ?>"></script>
     <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 </body>
 </html>

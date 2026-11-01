@@ -16,6 +16,12 @@ let auditorData = {
     latestPhysicalCount: null
 };
 let disposalCommitteeCases = [];
+let auditLogs = [];
+let auditLogPage = 1;
+let auditLogPageCount = 1;
+let auditLogTotal = 0;
+let auditLogRequestVersion = 0;
+let auditLogSearchTimer = null;
 let currentTagAssetId = '';
 let physicalCountSession = null;
 let physicalCountLoadError = '';
@@ -37,7 +43,7 @@ let conditionChartInstance = null;
 window.PAMS_LANG = window.PAMS_LANG || {};
 
 // Only locales with translation files are available in the selectors.
-const SUPPORTED_LANGS = ['en', 'am', 'om', 'so', 'ti', 'gz', 'ar', 'bn', 'fr'];
+const SUPPORTED_LANGS = ['en', 'am', 'om', 'so', 'ti', 'gz'];
 
 let selectedLanguage = 'en';
 
@@ -45,11 +51,34 @@ function translateText(value) {
     if (selectedLanguage === 'en') return value;
     const map = window.PAMS_LANG[selectedLanguage];
     if (map && map[value]) return map[value];
+    const receivedQuantity = value.match(/^Quantity received \(up to (\d+)\)$/);
+    if (map && receivedQuantity && map['Quantity received (up to {count})']) {
+        return map['Quantity received (up to {count})'].replace('{count}', receivedQuantity[1]);
+    }
     return value;
+}
+
+function translateTemplate(template, values = {}) {
+    let translated = translateText(template);
+    Object.entries(values).forEach(([key, value]) => {
+        translated = translated.split(`{${key}}`).join(String(value));
+    });
+    return translated;
 }
 
 const originalTextNodes = new WeakMap();
 const originalAttributes = new WeakMap();
+
+function setLocalizedAttribute(element, attribute, originalValue) {
+    if (!element) return;
+    let originals = originalAttributes.get(element);
+    if (!originals) {
+        originals = new Map();
+        originalAttributes.set(element, originals);
+    }
+    originals.set(attribute, originalValue);
+    element.setAttribute(attribute, translateText(originalValue));
+}
 
 function translateElement(element) {
     if (element.nodeType === Node.TEXT_NODE) {
@@ -83,10 +112,14 @@ function translateElement(element) {
 function setLanguage(language) {
     selectedLanguage = SUPPORTED_LANGS.includes(language) ? language : 'en';
     document.documentElement.lang = selectedLanguage;
-    document.documentElement.dir = selectedLanguage === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
     localStorage.setItem('pams-language', selectedLanguage);
     document.querySelectorAll('.language-selector').forEach(sel => { sel.value = selectedLanguage; });
     translateElement(document.body);
+    if (physicalCountSession && document.getElementById('auditChecklist')) renderAuditSection();
+    if (currentUser?.role === 'internal_auditor') renderAuditorWorkspace();
+    const dashboardTab = document.getElementById('tab-dashboard');
+    if (dashboardTab && !dashboardTab.classList.contains('hidden') && typeof Chart !== 'undefined') renderCharts();
 }
 
 function initializeLanguage() {
@@ -288,12 +321,13 @@ async function requestJson(url, options = {}) {
         document.getElementById('gateScannerPanel').classList.toggle('hidden', !['system_admin', 'property_admin', 'gate_security'].includes(role));
         document.getElementById('transfersTable').classList.toggle('hidden', role === 'gate_security');
         document.getElementById('nav-users').classList.toggle('hidden', role !== 'system_admin');
+        document.getElementById('nav-system-reset').classList.toggle('hidden', role !== 'system_admin');
         document.getElementById('nav-audit-logs').classList.toggle('hidden', !['system_admin', 'property_admin', 'internal_auditor'].includes(role));
         document.getElementById('maintenanceAdminFields').classList.toggle('hidden', role === 'asset_custodian');
         const departmentInput = document.getElementById('new-department');
         departmentInput.readOnly = role === 'department_head';
         if (role === 'department_head') departmentInput.value = currentUser.department || '';
-        departmentInput.placeholder = role === 'department_head' ? 'Assigned department' : 'e.g. Computer Science';
+        setLocalizedAttribute(departmentInput, 'placeholder', role === 'department_head' ? 'Assigned department' : 'e.g. Computer Science');
     }
 
     async function signOut() {
@@ -343,6 +377,29 @@ async function requestJson(url, options = {}) {
             const select = document.querySelector(`#tab-users select[name="role"][form="user-form-${Number(user.id)}"]`);
             if (select) toggleUserDepartmentField(select);
         });
+    }
+
+    async function confirmSystemDataReset(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const submit = document.getElementById('systemResetSubmit');
+        submit.disabled = true;
+        try {
+            const result = await requestJson('api/system-reset.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmation: form.elements.confirmation.value.trim() })
+            });
+            form.reset();
+            closeModal('systemResetModal');
+            auditLogs = [];
+            await loadAllData();
+            showToast(result.message);
+        } catch (err) {
+            showToast(`Could not delete application records: ${err.message}`);
+        } finally {
+            submit.disabled = false;
+        }
     }
 
     async function updateUserAccount(event, userId) {
@@ -417,8 +474,28 @@ async function requestJson(url, options = {}) {
     }
 
     async function loadAuditLogs() {
-        const response = await requestJson('api/audit-logs.php');
-        document.getElementById('auditLogsTableBody').innerHTML = response.data.map(log => `
+        const requestVersion = ++auditLogRequestVersion;
+        const params = new URLSearchParams({
+            q: document.getElementById('auditLogsSearch')?.value.trim() || '',
+            sort: document.getElementById('auditLogsSort')?.value || 'recent',
+            page: String(auditLogPage)
+        });
+        const response = await requestJson(`api/audit-logs.php?${params.toString()}`);
+        if (requestVersion !== auditLogRequestVersion) return;
+        auditLogs = response.data.logs;
+        auditLogPage = response.data.page;
+        auditLogPageCount = response.data.pageCount;
+        auditLogTotal = response.data.total;
+        renderAuditLogs();
+    }
+
+    function renderAuditLogs() {
+        const firstResult = auditLogTotal ? ((auditLogPage - 1) * 10) + 1 : 0;
+        const lastResult = Math.min(auditLogPage * 10, auditLogTotal);
+        document.getElementById('auditLogsResultCount').textContent = auditLogTotal
+            ? `${firstResult}–${lastResult} / ${auditLogTotal}`
+            : translateText('No audit logs match your search.');
+        document.getElementById('auditLogsTableBody').innerHTML = auditLogs.map(log => `
             <tr>
                 <td class="p-3 whitespace-nowrap">${escapeHtml(log.created_at)}</td>
                 <td class="p-3">${escapeHtml(log.full_name || 'System')} (${escapeHtml(log.username || '—')})</td>
@@ -426,6 +503,30 @@ async function requestJson(url, options = {}) {
                 <td class="p-3">${escapeHtml(log.details || '')}</td>
             </tr>
         `).join('');
+
+        document.getElementById('auditLogsPagination').innerHTML = `
+            <button type="button" onclick="changeAuditLogPage(-1)" ${auditLogPage <= 1 ? 'disabled' : ''} class="rounded border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">${escapeHtml(translateText('Previous'))}</button>
+            <span class="text-xs text-slate-500">${escapeHtml(translateText('Page'))} ${auditLogPage} ${escapeHtml(translateText('of'))} ${auditLogPageCount}</span>
+            <button type="button" onclick="changeAuditLogPage(1)" ${auditLogPage >= auditLogPageCount ? 'disabled' : ''} class="rounded border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">${escapeHtml(translateText('Next'))}</button>
+        `;
+    }
+
+    function searchAuditLogs() {
+        clearTimeout(auditLogSearchTimer);
+        auditLogPage = 1;
+        auditLogSearchTimer = setTimeout(() => loadAuditLogs().catch(err => showToast(`Could not search audit logs: ${err.message}`)), 250);
+    }
+
+    function changeAuditLogSort() {
+        auditLogPage = 1;
+        loadAuditLogs().catch(err => showToast(`Could not sort audit logs: ${err.message}`));
+    }
+
+    function changeAuditLogPage(direction) {
+        const nextPage = auditLogPage + direction;
+        if (nextPage < 1 || nextPage > auditLogPageCount) return;
+        auditLogPage = nextPage;
+        loadAuditLogs().catch(err => showToast(`Could not load audit log page: ${err.message}`));
     }
 // Dark Mode Toggle
 function toggleDarkMode() {
@@ -461,6 +562,11 @@ function openModal(id) {
     if (id === 'transferModal' || id === 'maintenanceModal') {
         populateAssetSelects();
     }
+}
+
+function openSystemResetFromNav() {
+    switchTab('users');
+    openModal('systemResetModal');
 }
 
 function closeModal(id) {
@@ -699,7 +805,7 @@ function updateReceiptQuantityLimit() {
     if (!quantityInput) return;
     const remaining = order ? Number(order.quantity) - Number(order.received_quantity) : 0;
     quantityInput.max = remaining || '';
-    quantityInput.placeholder = order ? `Quantity received (up to ${remaining})` : 'Quantity received';
+    setLocalizedAttribute(quantityInput, 'placeholder', order ? `Quantity received (up to ${remaining})` : 'Quantity received');
 }
 
 function renderWarehouse() {
@@ -933,8 +1039,8 @@ function renderCharts() {
     campusChartInstance = new Chart(ctxCampus, {
         type: 'bar',
         data: {
-            labels: campuses,
-            datasets: [{ label: 'Valuation (Million ETB)', data: campusValues, backgroundColor: '#3b82f6', borderRadius: 6 }]
+            labels: campuses.map(translateText),
+            datasets: [{ label: translateText('Valuation (Million ETB)'), data: campusValues, backgroundColor: '#3b82f6', borderRadius: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false }
     });
@@ -943,7 +1049,7 @@ function renderCharts() {
     conditionChartInstance = new Chart(ctxCondition, {
         type: 'doughnut',
         data: {
-            labels: conditions,
+            labels: conditions.map(translateText),
             datasets: [{ data: conditionCounts, backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6b7280'] }]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -1372,8 +1478,16 @@ function renderAuditorWorkspace() {
 
     const count = auditorData.latestPhysicalCount;
     document.getElementById('auditor-count-summary').textContent = count
-        ? `Session #${count.id} (${count.status}) — ${Number(count.verified_count || 0)} verified, ${Number(count.missing_count || 0)} marked missing, ${Number(count.pending_count || 0)} pending out of ${Number(count.expected_count || 0)} assets. Started ${count.started_at}.`
-        : 'No physical count session has been recorded.';
+        ? translateTemplate('Session #{id} ({status}) — {verified} verified, {missing} marked missing, {pending} pending out of {expected} assets. Started {date}.', {
+            id: count.id,
+            status: translateText(String(count.status || '').replace(/^./, first => first.toUpperCase())),
+            verified: Number(count.verified_count || 0),
+            missing: Number(count.missing_count || 0),
+            pending: Number(count.pending_count || 0),
+            expected: Number(count.expected_count || 0),
+            date: count.started_at
+        })
+        : translateText('No physical count session has been recorded.');
 
     const renderValuations = (rows, bodyId) => {
         document.getElementById(bodyId).innerHTML = rows.length
@@ -1816,11 +1930,11 @@ function renderAuditSection() {
     startScanButton.disabled = !physicalCountSession;
 
     if (!physicalCountSession) {
-        document.getElementById('audit-expected').textContent = '0 Units';
-        document.getElementById('audit-verified').textContent = '0 Units';
-        document.getElementById('audit-missing').textContent = '0 Units';
-        document.getElementById('audit-pending').textContent = '0 Units';
-        summary.textContent = physicalCountLoadError || 'No physical count session is active.';
+        document.getElementById('audit-expected').textContent = translateTemplate('{count} Units', { count: 0 });
+        document.getElementById('audit-verified').textContent = translateTemplate('{count} Units', { count: 0 });
+        document.getElementById('audit-missing').textContent = translateTemplate('{count} Units', { count: 0 });
+        document.getElementById('audit-pending').textContent = translateTemplate('{count} Units', { count: 0 });
+        summary.textContent = physicalCountLoadError || translateText('No physical count session is active.');
         checklist.innerHTML = physicalCountLoadError
             ? '<p class="text-sm text-rose-600">Apply the physical count table definitions from schema.sql, then reload this page.</p>'
             : '<p class="text-sm text-slate-500">Start a physical count session to create a checklist from the current asset register.</p>';
@@ -1828,8 +1942,8 @@ function renderAuditSection() {
     }
 
     const sessionDate = new Date(physicalCountSession.started_at.replace(' ', 'T')).toLocaleString();
-    summary.textContent = `Active session #${physicalCountSession.id} started ${sessionDate}.`;
-    document.getElementById('audit-expected').textContent = `${physicalCountSession.items.length} Units`;
+    summary.textContent = translateTemplate('Active session #{id} started {date}.', { id: physicalCountSession.id, date: sessionDate });
+    document.getElementById('audit-expected').textContent = translateTemplate('{count} Units', { count: physicalCountSession.items.length });
 
     physicalCountSession.items.forEach(item => {
         const isVerified = item.is_verified === true;
@@ -2025,6 +2139,37 @@ function showWarehouseScanMessage(message, type) {
 }
 
 function parseAssetQrPayload(decodedText) {
+    const rawText = String(decodedText || '').trim();
+    if (rawText.startsWith('{')) {
+        try {
+            const payload = JSON.parse(rawText);
+            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                return {
+                    id: String(payload.id || ''),
+                    name: String(payload.name || ''),
+                    category: String(payload.cat || ''),
+                    campus: String(payload.campus || ''),
+                    department: String(payload.dept || ''),
+                    custodian: String(payload.custodian || ''),
+                    serial: String(payload.serial || ''),
+                    condition: String(payload.condition || ''),
+                    status: String(payload.status || ''),
+                    stockStatus: String(payload.stock || ''),
+                    storageLocation: String(payload.storage || ''),
+                    cost: String(payload.cost ?? ''),
+                    acquisitionDate: String(payload.date || ''),
+                    building: String(payload.building || ''),
+                    room: String(payload.room || ''),
+                    purchaseOrder: String(payload.po || ''),
+                    goodsReceiptNote: String(payload.grn || ''),
+                    tagStatus: String(payload.tag || '')
+                };
+            }
+        } catch (error) {
+            // Continue with the legacy line-based QR format.
+        }
+    }
+
     const lines = String(decodedText || '').replace(/\r/g, '').split('\n').map(line => line.trim()).filter(Boolean);
     const fields = {};
     lines.forEach(line => {
@@ -2106,45 +2251,27 @@ function renderWarehouseScanDetails(asset, qrData) {
 }
 
 function buildAssetQrPayload(item) {
-    const assetId = item?.id || 'Unknown asset';
-    const assetName = item?.name || 'Unknown item';
-    const campus = item?.campus || 'N/A';
-    const department = item?.department || 'N/A';
-    const custodian = item?.custodian || 'N/A';
-    const serial = item?.serial || 'N/A';
-    const category = item?.category || 'N/A';
-    const building = item?.building || 'N/A';
-    const room = item?.room || 'N/A';
-    const acquisitionCost = item?.cost ?? 'N/A';
-    const acquisitionDate = item?.acq_date || 'N/A';
-    const condition = item?.condition || 'N/A';
-    const status = item?.status || 'N/A';
-    const stockStatus = item?.stock_status || 'N/A';
-    const storageLocation = item?.storage_location || 'N/A';
-    const purchaseOrder = item?.purchase_order_id || 'N/A';
-    const goodsReceiptNote = item?.goods_receipt_note_id || 'N/A';
-    const tagStatus = item?.tagged_at ? `Applied ${item.tagged_at}` : 'Not yet applied';
-
-    return [
-        'Debre Markos University',
-        `Asset ID: ${assetId}`,
-        assetName,
-        `Category: ${category}`,
-        `Campus: ${campus} (${department})`,
-        `Building: ${building}`,
-        `Room: ${room}`,
-        `Custodian: ${custodian}`,
-        `Serial No: ${serial}`,
-        `Acquisition cost: ${acquisitionCost}`,
-        `Acquisition date: ${acquisitionDate}`,
-        `Condition: ${condition}`,
-        `Asset status: ${status}`,
-        `Stock status: ${stockStatus}`,
-        `Storage location: ${storageLocation}`,
-        `Purchase order: ${purchaseOrder}`,
-        `Goods receipt note: ${goodsReceiptNote}`,
-        `Physical tag status: ${tagStatus}`
-    ].join('\n');
+    return JSON.stringify({
+        v: 1,
+        id: item?.id || '',
+        name: item?.name || '',
+        cat: item?.category || '',
+        campus: item?.campus || '',
+        dept: item?.department || '',
+        building: item?.building || '',
+        room: item?.room || '',
+        custodian: item?.custodian || '',
+        serial: item?.serial || '',
+        cost: item?.cost ?? '',
+        date: item?.acq_date || '',
+        condition: item?.condition || '',
+        status: item?.status || '',
+        stock: item?.stock_status || '',
+        storage: item?.storage_location || '',
+        po: item?.purchase_order_id || '',
+        grn: item?.goods_receipt_note_id || '',
+        tag: item?.tagged_at ? `Applied ${item.tagged_at}` : 'Not yet applied'
+    });
 }
 
 async function handleAuditQrScan(decodedText) {
@@ -2161,12 +2288,12 @@ async function handleAuditQrScan(decodedText) {
             || item;
         if (!item) {
             renderAuditScanDetails(asset, qrData, 'Not included in the active physical count session');
-            showAuditScanMessage(`No asset with ID "${scannedAssetId}" is in this count session.`, 'error');
+        showAuditScanMessage(translateTemplate('No asset with ID "{assetId}" is in this count session.', { assetId: scannedAssetId }), 'error');
             return;
         }
         if (item.is_verified === true) {
             renderAuditScanDetails(asset, qrData, 'Already counted as present');
-            showAuditScanMessage(`${item.asset_id} was already counted as present.`, 'success');
+            showAuditScanMessage(translateTemplate('{assetId} was already counted as present.', { assetId: item.asset_id }), 'success');
             return;
         }
 
@@ -2179,7 +2306,7 @@ async function handleAuditQrScan(decodedText) {
         const saved = await updateAuditItem(item.asset_id, checkbox);
         if (saved) {
             renderAuditScanDetails(asset, qrData, 'Counted as present');
-            showAuditScanMessage(`${item.asset_id} counted as present. Scan the next asset tag.`, 'success');
+            showAuditScanMessage(translateTemplate('{assetId} counted as present. Scan the next asset tag.', { assetId: item.asset_id }), 'success');
         }
     } catch (err) {
         console.error('Could not record scanned inventory asset:', err);
@@ -2220,14 +2347,14 @@ function updateAuditCounts() {
     const verified = checks.filter(check => check.checked).length;
     const missing = checks.filter(check => check.dataset.countState === 'false').length;
     const pending = checks.filter(check => check.dataset.countState === 'pending').length;
-    document.getElementById('audit-verified').textContent = `${verified} Units`;
-    document.getElementById('audit-missing').textContent = `${missing} Units`;
-    document.getElementById('audit-pending').textContent = `${pending} Units`;
+    document.getElementById('audit-verified').textContent = translateTemplate('{count} Units', { count: verified });
+    document.getElementById('audit-missing').textContent = translateTemplate('{count} Units', { count: missing });
+    document.getElementById('audit-pending').textContent = translateTemplate('{count} Units', { count: pending });
     checks.forEach(check => {
         const status = check.closest('div.p-3').querySelector('.audit-status');
         const verifiedNow = check.dataset.countState === 'true';
         const missingNow = check.dataset.countState === 'false';
-        status.textContent = verifiedNow ? 'Verified' : missingNow ? 'Marked missing' : 'Pending verification';
+        status.textContent = translateText(verifiedNow ? 'Verified' : missingNow ? 'Marked missing' : 'Pending verification');
         status.classList.toggle('bg-emerald-100', verifiedNow);
         status.classList.toggle('text-emerald-700', verifiedNow);
         status.classList.toggle('bg-rose-100', missingNow);
@@ -2274,7 +2401,7 @@ async function updateAuditItem(assetId, checkbox) {
 }
 
 async function startAuditSession() {
-    if (physicalCountSession && !window.confirm('Starting a new count will complete the current session. Its saved results will be kept. Continue?')) {
+    if (physicalCountSession && !window.confirm(translateText('Starting a new count will complete the current session. Its saved results will be kept. Continue?'))) {
         return;
     }
 
@@ -2300,7 +2427,7 @@ async function startAuditSession() {
             };
             renderAuditorWorkspace();
         }
-        showToast(`Physical count session #${physicalCountSession.id} started.`);
+        showToast(translateTemplate('Physical count session #{id} started.', { id: physicalCountSession.id }));
     } catch (err) {
         console.error('Failed to start physical count session:', err);
         showToast(`Could not start physical count: ${err.message}`);
@@ -2331,9 +2458,26 @@ function viewTagModal(id) {
     currentTagAssetId = item.id;
     document.getElementById('tag-id').textContent = item.id;
     document.getElementById('tag-name').textContent = item.name;
-    document.getElementById('tag-campus').textContent = `${item.campus} (${item.department})`;
-    document.getElementById('tag-custodian').textContent = item.custodian;
-    document.getElementById('tag-serial').textContent = item.serial;
+    const tagFields = {
+        'tag-category': item.category,
+        'tag-campus': item.campus,
+        'tag-department': item.department,
+        'tag-building': item.building,
+        'tag-room': item.room,
+        'tag-custodian': item.custodian,
+        'tag-serial': item.serial,
+        'tag-cost': item.cost === null || item.cost === undefined ? '' : `${item.cost} ETB`,
+        'tag-acq-date': item.acq_date,
+        'tag-condition': item.condition,
+        'tag-asset-status': item.status,
+        'tag-stock-status': item.stock_status,
+        'tag-storage': item.storage_location,
+        'tag-po': item.purchase_order_id,
+        'tag-grn': item.goods_receipt_note_id
+    };
+    Object.entries(tagFields).forEach(([elementId, value]) => {
+        document.getElementById(elementId).textContent = value || 'Not provided';
+    });
     document.getElementById('tag-status').textContent = item.tagged_at
         ? `Applied ${item.tagged_at}`
         : 'Not yet applied';
@@ -2347,7 +2491,7 @@ function viewTagModal(id) {
     qrContainer.innerHTML = '';
     const qrPayload = buildAssetQrPayload(item);
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: qrPayload, width: 180, height: 180 });
+        new QRCode(qrContainer, { text: qrPayload, width: 200, height: 200 });
     } else {
         qrContainer.textContent = qrPayload;
     }
@@ -2368,11 +2512,7 @@ async function markAssetTagApplied() {
         });
         showToast(result.message);
         await loadAllData();
-        const updatedAsset = assets.find(asset => asset.id === currentTagAssetId)
-            || warehouseData.assets.find(asset => asset.id === currentTagAssetId);
-        document.getElementById('tag-status').textContent = updatedAsset?.tagged_at
-            ? `Applied ${updatedAsset.tagged_at}`
-            : 'Applied';
+        viewTagModal(currentTagAssetId);
     } catch (err) {
         console.error('Could not update the asset tag status:', err);
         showToast(`Could not mark the asset tag applied: ${err.message}`);
@@ -2395,7 +2535,7 @@ function openGatePassModal(id) {
     qrContainer.innerHTML = '';
     const qrPayload = buildGatePassQrPayload(tr);
     if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, { text: qrPayload, width: 180, height: 180 });
+        new QRCode(qrContainer, { text: qrPayload, width: 140, height: 140 });
     } else {
         qrContainer.textContent = qrPayload;
     }

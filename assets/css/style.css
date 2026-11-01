@@ -296,6 +296,35 @@ html.dark tbody tr:hover {
         padding: 20px;
     }
 
+    body[data-print-target="gate-pass"] .gate-pass-screen-controls {
+        display: none !important;
+    }
+
+    body[data-print-target="gate-pass"] #gatePassModal > div {
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+    }
+
+    body[data-print-target="tag"] #tagBox {
+        max-width: 7.5in;
+        color: #111827;
+        background: #fff;
+        border-color: #4f46e5;
+    }
+
+    body[data-print-target="tag"] #tagBox * {
+        color: #111827 !important;
+    }
+
+    body[data-print-target="tag"] #tag-id {
+        color: #3730a3 !important;
+    }
+
+    body[data-print-target="tag"] #qrcode {
+        flex: 0 0 auto;
+    }
+
     body[data-print-target="siv"] #sivPrintBox {
         position: absolute;
         left: 0;
